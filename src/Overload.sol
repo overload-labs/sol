@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.0;
+
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IOverloadHooks} from "./interfaces/IOverloadHooks.sol";
 
+import {Call} from "./libraries/Call.sol";
 import {Cast} from "./libraries/Cast.sol";
 import {Delegation, DelegationKey, DelegationLib} from "./libraries/types/Delegation.sol";
+import {Hooks} from "./libraries/Hooks.sol";
 import {Lock} from "./libraries/Lock.sol";
 import {Metadata} from "./libraries/types/Metadata.sol";
 import {Pool, PoolLib} from "./libraries/types/Pool.sol";
@@ -51,6 +56,10 @@ contract Overload is Lock {
     mapping(address consensus => mapping(address validator => Metadata)) public metadata;
     mapping(address consensus => mapping(address validator => mapping(address token => Validator[]))) public validators;
     mapping(address consensus => mapping(address token => Pool[])) public pools;
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                    TRANSIENT STORAGE                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       OVERLOAD VIEWS                       */
@@ -149,7 +158,9 @@ contract Overload is Lock {
         return true;
     }
 
-    function delegate(DelegationKey memory key, uint256 delta) public lock returns (bool) {
+    // function delegate(DelegationKey memory key, uint256 delta, bytes calldata data) public lock returns (bool) {
+    function delegate(DelegationKey memory key, uint256 delta, bytes calldata data) public lock returns (bool) {
+        // Checks
         if (msg.sender != key.owner && !isOperator[key.owner][msg.sender]) {
             uint256 allowed = allowance[key.owner][msg.sender][key.token];
 
@@ -157,37 +168,42 @@ contract Overload is Lock {
                 allowance[key.owner][msg.sender][key.token] = allowed - delta;
             }
         }
-
         uint256 balance = unbonded[key.owner][key.token] + bonded[key.owner][key.token];
         require(delta <= balance, "OVERFLOW_AMT");
 
+        // Hook before
+        _beforeDelegateHook(key.consensus, key, delta, data);
+
+        // Update delegation
+        Delegation memory delegation;
         if (delegated[key.owner][key.token][key.consensus]) {
             /**
              * If delegation already exists for `consensus`, then find delegation and then increase
-             * */ 
+             */
 
-            (Delegation memory delegation, int256 index) = delegations.get(key, true);
+            int256 index;
+            (delegation, index) = delegations.get(key, true);
             uint256 amount = delegation.amount + delta;
             require(amount <= balance, "OVERFLOW_SUM");
 
             _bondIncrease(key.owner, key.token, amount);
-            delegations.increase(key.owner, key.token, index.u256(), delta);
+            delegation = delegations.increase(key.owner, key.token, index.u256(), delta);
         } else {
             /**
              * If no existing delegation exists, push a new delegation into array
              */
 
             _bondIncrease(key.owner, key.token, delta);
-            delegations.push(key, delta);
             delegated[key.owner][key.token][key.consensus] = true;
+            delegation = delegations.push(key, delta);
         }
 
         // Update validator and pool
-        validators[key.consensus][key.validator][key.token].increase(delta);
-        pools[key.consensus][key.token].increase(
-            validators[key.consensus][key.validator][key.token].head().active,
-            delta
-        );
+        Validator memory validator = validators[key.consensus][key.validator][key.token].increase(delta);
+        Pool memory pool = pools[key.consensus][key.token].increase(validator.active, delta);
+
+        // Hook after
+        _afterDelegateHook(key.consensus, key, delta, delegation, validator, pool, data);
 
         return true;
     }
@@ -351,6 +367,35 @@ contract Overload is Lock {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
             interfaceId == 0x0f632fb3; // ERC165 Interface ID for ERC6909
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         HOOK CALLS                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _beforeDelegateHook(
+        address target,
+        DelegationKey memory key,
+        uint256 delta,
+        bytes calldata data
+    ) internal {
+        if (Call.isContract(target) && ERC165Checker.supportsInterface(target, IOverloadHooks.beforeDelegate.selector)) {
+            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeDelegate.selector, msg.sender, key, delta, data), false);
+        }
+    }
+
+    function _afterDelegateHook(
+        address target,
+        DelegationKey memory key,
+        uint256 delta,
+        Delegation memory delegation,
+        Validator memory validator,
+        Pool memory pool,
+        bytes calldata data
+    ) internal {
+        if (Call.isContract(target) && ERC165Checker.supportsInterface(target, IOverloadHooks.afterDelegate.selector)) {
+            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.afterDelegate.selector, msg.sender, key, delta, data), false);
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

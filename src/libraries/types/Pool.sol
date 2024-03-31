@@ -10,6 +10,10 @@ struct Pool {
 }
 
 library PoolLib {
+    /*//////////////////////////////////////////////////////////////
+                                 VIEWS
+    //////////////////////////////////////////////////////////////*/
+
     function zero() internal pure returns (Pool memory) {
         return Pool({
             active: 0,
@@ -27,11 +31,15 @@ library PoolLib {
         }
     }
 
-    function increase(Pool[] storage checkpoints, bool isActive, uint256 delta) internal {
+    /*//////////////////////////////////////////////////////////////
+                                 MUTATE
+    //////////////////////////////////////////////////////////////*/
+
+    function increase(Pool[] storage checkpoints, bool isActive, uint256 delta) internal returns (Pool memory pool) {
         uint256 length = checkpoints.length;
 
         if (length > 0) {
-            push(
+            pool = push(
                 checkpoints,
                 isActive
                     ? checkpoints[length - 1].active + delta
@@ -39,7 +47,7 @@ library PoolLib {
                 checkpoints[length - 1].total + delta
             );
         } else {
-            push(
+            pool = push(
                 checkpoints,
                 isActive
                     ? delta
@@ -49,11 +57,11 @@ library PoolLib {
         }
     }
 
-    function decrease(Pool[] storage checkpoints, bool isActive, uint256 delta) internal {
+    function decrease(Pool[] storage checkpoints, bool isActive, uint256 delta) internal returns (Pool memory pool) {
         uint256 length = checkpoints.length;
 
         if (length > 0) {
-            push(
+            pool = push(
                 checkpoints,
                 isActive
                     ? checkpoints[length - 1].active - delta
@@ -65,17 +73,18 @@ library PoolLib {
         }
     }
 
-    function push(Pool[] storage checkpoints, uint256 active, uint256 total) internal {
+    function push(Pool[] storage checkpoints, uint256 active, uint256 total) internal returns (Pool memory pool) {
         uint256 length = checkpoints.length;
 
         if (length > 0 && checkpoints[length - 1].startBlock == block.number) {
             checkpoints[length - 1].active = uint256(active);
             checkpoints[length - 1].total = uint256(total);
+            pool = head(checkpoints);
         } else {
             if (length > 0) {
                 checkpoints[length - 1].endBlock = uint32(block.number) - uint32(1);
                 checkpoints.push(
-                    Pool({
+                    pool = Pool({
                         active: uint256(active),
                         total: uint256(total),
                         startBlock: uint32(block.number),
@@ -84,7 +93,7 @@ library PoolLib {
                 );
             } else {
                 checkpoints.push(
-                    Pool({
+                    pool = Pool({
                         active: uint256(active),
                         total: uint256(total),
                         startBlock: uint32(block.number),

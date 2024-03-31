@@ -16,6 +16,10 @@ struct ValidatorKey {
 }
 
 library ValidatorLib {
+    /*//////////////////////////////////////////////////////////////
+                                 VIEWS
+    //////////////////////////////////////////////////////////////*/
+
     function zero() internal pure returns (Validator memory) {
         return Validator({
             amount: 0,
@@ -33,51 +37,52 @@ library ValidatorLib {
         }
     }
 
-    function increase(Validator[] storage checkpoints, uint256 delta) internal {
+    /*//////////////////////////////////////////////////////////////
+                                 MUTATE
+    //////////////////////////////////////////////////////////////*/
+
+    function increase(Validator[] storage checkpoints, uint256 delta) internal returns (Validator memory validator) {
         uint256 length = checkpoints.length;
 
         if (length > 0) {
-            push(checkpoints, checkpoints[length - 1].amount + delta);
+            validator = push(checkpoints, checkpoints[length - 1].amount + delta);
         } else {
-            push(checkpoints, delta);
+            validator = push(checkpoints, delta);
         }
     }
 
-    function decrease(Validator[] storage checkpoints, uint256 delta) internal {
+    function decrease(Validator[] storage checkpoints, uint256 delta) internal returns (Validator memory validator) {
         uint256 length = checkpoints.length;
 
         if (length > 0) {
-            push(checkpoints, checkpoints[length - 1].amount - delta);
+            validator = push(checkpoints, checkpoints[length - 1].amount - delta);
         } else {
             revert("ValidatorLib: arithmetic underflow");
         }
     }
 
-    function push(Validator[] storage checkpoints, uint256 amount) internal {
+    function push(Validator[] storage checkpoints, uint256 amount) internal returns (Validator memory validator) {
         uint256 length = checkpoints.length;
 
         if (length > 0 && checkpoints[length - 1].startBlock == block.number) {
             checkpoints[length - 1].amount = uint256(amount);
+            validator = head(checkpoints);
         } else {
             if (length > 0) {
                 checkpoints[length - 1].endBlock = uint32(block.number) - uint32(1);
-                checkpoints.push(
-                    Validator({
-                        amount: uint256(amount),
-                        active: checkpoints[length - 1].active,
-                        startBlock: uint32(block.number),
-                        endBlock: uint32(0)
-                    })
-                );
+                checkpoints.push(validator = Validator({
+                    amount: uint256(amount),
+                    active: checkpoints[length - 1].active,
+                    startBlock: uint32(block.number),
+                    endBlock: uint32(0)
+                }));
             } else {
-                checkpoints.push(
-                    Validator({
-                        amount: uint256(amount),
-                        active: false,
-                        startBlock: uint32(block.number),
-                        endBlock: uint32(0)
-                    })
-                );
+                checkpoints.push(validator = Validator({
+                    amount: uint256(amount),
+                    active: false,
+                    startBlock: uint32(block.number),
+                    endBlock: uint32(0)
+                }));
             }
         }
     }

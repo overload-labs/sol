@@ -17,28 +17,16 @@ struct DelegationKey {
 }
 
 library DelegationLib {
+    /*//////////////////////////////////////////////////////////////
+                                 VIEWS
+    //////////////////////////////////////////////////////////////*/
+
     function zero() internal pure returns (Delegation memory) {
         return Delegation({
             consensus: address(0),
             validator: address(0),
             amount: 0
         });
-    }
-
-    function max(
-        mapping(address owner => mapping(address token => Delegation[])) storage map,
-        address owner,
-        address token
-    ) internal view returns (uint256 value) {
-        Delegation[] memory delegations = map[owner][token];
-
-        for (uint256 i = 0; i < delegations.length; i++) {
-            Delegation memory delegation = delegations[i];
-
-            if (delegation.amount > value) {
-                value = delegation.amount;
-            }
-        }
     }
 
     function get(
@@ -57,6 +45,22 @@ library DelegationLib {
             } else {
                 index = -1;
                 delegation = zero();
+            }
+        }
+    }
+
+    function max(
+        mapping(address owner => mapping(address token => Delegation[])) storage map,
+        address owner,
+        address token
+    ) internal view returns (uint256 value) {
+        Delegation[] memory delegations = map[owner][token];
+
+        for (uint256 i = 0; i < delegations.length; i++) {
+            Delegation memory delegation = delegations[i];
+
+            if (delegation.amount > value) {
+                value = delegation.amount;
             }
         }
     }
@@ -94,14 +98,19 @@ library DelegationLib {
         return -1;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                 MUTATE
+    //////////////////////////////////////////////////////////////*/
+
     function increase(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         address owner,
         address token,
         uint256 index,
         uint256 delta
-    ) internal {
+    ) internal returns (Delegation memory) {
         map[owner][token][index].amount += delta;
+        return map[owner][token][index];
     }
 
     function decrease(
@@ -110,20 +119,23 @@ library DelegationLib {
         address token,
         uint256 index,
         uint256 delta
-    ) internal {
+    ) internal returns (Delegation memory) {
         map[owner][token][index].amount -= delta;
+        return map[owner][token][index];
     }
 
     function push(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         DelegationKey memory key,
         uint256 amount
-    ) internal {
-        map[key.owner][key.token].push(Delegation({
-            consensus: key.consensus,
-            validator: key.validator,
-            amount: amount
-        }));
+    ) internal returns (Delegation memory delegation) {
+        map[key.owner][key.token].push(
+            delegation = Delegation({
+                consensus: key.consensus,
+                validator: key.validator,
+                amount: amount
+            })
+        );
     }
 
     function remove(

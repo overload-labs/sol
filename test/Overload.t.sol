@@ -2,24 +2,11 @@
 pragma solidity ^0.8.0;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 
 import {Overload} from "../src/Overload.sol";
 import {Delegation, DelegationKey} from "../src/libraries/types/Delegation.sol";
 import {UndelegationKey} from "../src/libraries/types/Undelegation.sol";
-
-contract ERC20Mock is ERC20 {
-    constructor(string memory name, string memory symbol, uint8 decimals)
-        ERC20(name, symbol, decimals) {}
-
-    function mint(address to, uint256 amount) public {
-        _mint(to, amount);
-    }
-
-    function burn(address from, uint256 amount) public {
-        _burn(from, amount);
-    }
-}
 
 contract OverloadTest is Test {
     ERC20Mock token;
@@ -71,7 +58,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 70);
+        }), 70, "");
 
         (address consensus, address validator, uint256 amount) = overload.delegations(address(0xBEEF), address(token), 0);
         assertEq(consensus, address(0xC0));
@@ -92,7 +79,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 70);
+        }), 70, "");
 
         vm.prank(address(0xBEEF));
         overload.delegate(DelegationKey({
@@ -100,7 +87,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 10);
+        }), 10, "");
 
         DelegationKey memory key = DelegationKey({
             owner: address(0xBEEF),
@@ -130,7 +117,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 70);
+        }), 70, "");
 
         vm.prank(address(0xBEEF));
         overload.delegate(DelegationKey({
@@ -138,7 +125,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC1),
             validator: address(0xABCD)
-        }), 50);
+        }), 50, "");
 
         /**
          * Checks
@@ -173,7 +160,7 @@ contract OverloadTest is Test {
         // ===
 
         vm.prank(address(0xBEEF));
-        overload.delegate(key, 45);
+        overload.delegate(key, 45, "");
 
         assertEq(overload.getDelegation(key).consensus, address(0xC1));
         assertEq(overload.getDelegation(key).validator, address(0xABCD));
@@ -192,7 +179,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            50
+            50,
+            ""
         );
 
         vm.prank(address(0xBEEF));
@@ -220,7 +208,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            50
+            50,
+            ""
         );
 
         vm.prank(address(0xC0));
@@ -252,7 +241,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            50
+            50,
+            ""
         );
 
         vm.prank(address(0xC0));
@@ -285,47 +275,47 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC0);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC1);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC2);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC3);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC4);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC5);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC6);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC7);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC8);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC9);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC10);
-        overload.delegate(key, 50);
+        overload.delegate(key, 50, "");
 
         // ===
 
@@ -346,7 +336,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            50
+            50,
+            ""
         );
 
         vm.prank(address(0xC0));
@@ -381,7 +372,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            50
+            50,
+            ""
         );
 
         vm.prank(address(0xC0));
