@@ -58,7 +58,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 70, "");
+        }), 70, "", false);
 
         (address consensus, address validator, uint256 amount) = overload.delegations(address(0xBEEF), address(token), 0);
         assertEq(consensus, address(0xC0));
@@ -79,7 +79,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 70, "");
+        }), 70, "", false);
 
         vm.prank(address(0xBEEF));
         overload.delegate(DelegationKey({
@@ -87,7 +87,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 10, "");
+        }), 10, "", false);
 
         DelegationKey memory key = DelegationKey({
             owner: address(0xBEEF),
@@ -117,7 +117,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC0),
             validator: address(0xABCD)
-        }), 70, "");
+        }), 70, "", false);
 
         vm.prank(address(0xBEEF));
         overload.delegate(DelegationKey({
@@ -125,7 +125,7 @@ contract OverloadTest is Test {
             token: address(token),
             consensus: address(0xC1),
             validator: address(0xABCD)
-        }), 50, "");
+        }), 50, "", false);
 
         /**
          * Checks
@@ -160,7 +160,7 @@ contract OverloadTest is Test {
         // ===
 
         vm.prank(address(0xBEEF));
-        overload.delegate(key, 45, "");
+        overload.delegate(key, 45, "", false);
 
         assertEq(overload.getDelegation(key).consensus, address(0xC1));
         assertEq(overload.getDelegation(key).validator, address(0xABCD));
@@ -180,7 +180,8 @@ contract OverloadTest is Test {
                 validator: address(0xABCD)
             }),
             50,
-            ""
+            "",
+            false
         );
 
         vm.prank(address(0xBEEF));
@@ -191,7 +192,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            25
+            25,
+            ""
         );
 
         assertEq(overload.unbonded(address(0xBEEF), address(token)), 75);
@@ -209,7 +211,8 @@ contract OverloadTest is Test {
                 validator: address(0xABCD)
             }),
             50,
-            ""
+            "",
+            false
         );
 
         vm.prank(address(0xC0));
@@ -222,7 +225,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            25
+            25,
+            ""
         );
 
         assertEq(overload.getUndelegation(key).consensus, address(0xC0));
@@ -242,7 +246,8 @@ contract OverloadTest is Test {
                 validator: address(0xABCD)
             }),
             50,
-            ""
+            "",
+            false
         );
 
         vm.prank(address(0xC0));
@@ -256,7 +261,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            50
+            50,
+            ""
         );
 
         assertEq(overload.getDelegationCardinality(address(0xBEEF), address(token)), 0);
@@ -275,47 +281,47 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC0);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC1);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC2);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC3);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC4);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC5);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC6);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC7);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC8);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC9);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         vm.prank(address(0xBEEF));
         key.consensus = address(0xC10);
-        overload.delegate(key, 50, "");
+        overload.delegate(key, 50, "", false);
 
         // ===
 
@@ -323,7 +329,7 @@ contract OverloadTest is Test {
         overload.setCooldown(address(0xC31), 1000);
 
         vm.prank(address(0xBEEF));
-        overload.undelegating(key, 25);
+        overload.undelegating(key, 25, "");
     }
 
     function test_undelegate() public {
@@ -337,7 +343,8 @@ contract OverloadTest is Test {
                 validator: address(0xABCD)
             }),
             50,
-            ""
+            "",
+            false
         );
 
         vm.prank(address(0xC0));
@@ -351,7 +358,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            50
+            50,
+            ""
         );
 
         // ===
@@ -373,7 +381,8 @@ contract OverloadTest is Test {
                 validator: address(0xABCD)
             }),
             50,
-            ""
+            "",
+            false
         );
 
         vm.prank(address(0xC0));
@@ -387,7 +396,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            30
+            30,
+            ""
         );
         vm.warp(block.timestamp + 1000);
         vm.prank(address(0xBEEF));
@@ -398,7 +408,8 @@ contract OverloadTest is Test {
                 consensus: address(0xC0),
                 validator: address(0xABCD)
             }),
-            20
+            20,
+            ""
         );
         vm.warp(block.timestamp + 999);
 

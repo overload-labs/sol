@@ -58,10 +58,6 @@ contract Overload is Lock {
     mapping(address consensus => mapping(address token => Pool[])) public pools;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                    TRANSIENT STORAGE                       */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       OVERLOAD VIEWS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -159,7 +155,7 @@ contract Overload is Lock {
     }
 
     // function delegate(DelegationKey memory key, uint256 delta, bytes calldata data) public lock returns (bool) {
-    function delegate(DelegationKey memory key, uint256 delta, bytes calldata data) public lock returns (bool) {
+    function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) public lock returns (bool) {
         // Checks
         if (msg.sender != key.owner && !isOperator[key.owner][msg.sender]) {
             uint256 allowed = allowance[key.owner][msg.sender][key.token];
@@ -172,7 +168,7 @@ contract Overload is Lock {
         require(delta <= balance, "OVERFLOW_AMT");
 
         // Hook before
-        _beforeDelegateHook(key.consensus, key, delta, data);
+        _beforeDelegateHook(key.consensus, key, delta, data, strict);
 
         // Update delegation
         Delegation memory delegation;
@@ -203,7 +199,7 @@ contract Overload is Lock {
         Pool memory pool = pools[key.consensus][key.token].increase(validator.active, delta);
 
         // Hook after
-        _afterDelegateHook(key.consensus, key, delta, delegation, validator, pool, data);
+        _afterDelegateHook(key.consensus, key, delta, delegation, validator, pool, data, strict);
 
         return true;
     }
@@ -211,33 +207,36 @@ contract Overload is Lock {
     /// @dev Convert a specific `Delegaton` object to `Undelegation`
     function undelegating(
         DelegationKey memory key,
-        uint256 delta
-    ) public lock returns (bool success, UndelegationKey memory keyRet) {
+        uint256 delta,
+        bytes calldata data
+    ) public lock returns (bool success, UndelegationKey memory keyret) {
+        // Checks
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
         require(delta > 0);
         require(delegated[key.owner][key.token][key.consensus], "NO_DELEGATION");
         require(undelegations[key.owner][key.token].length <= 32, "MAX_LENGTH");
-
-        // Get the delegation and index
         (Delegation memory delegation, int256 index) = delegations.get(key, true);
         require(key.consensus == delegation.consensus, "MISMATCH_CONSENSUS");
         require(key.validator == delegation.validator, "MISMATCH_VALIDATOR");
         require(delta <= delegation.amount, "OVERFLOW");
         require(index >= 0, "FATAL");
 
-        // Update the delegation object before bonding update.
+        // Hook before
+        _beforeUndelegatingHook(key.consensus, key, delta, data);
+
+        // Update the delegation
         if (delta == delegation.amount) {
-            delegations.remove(key.owner, key.token, index.u256());
+            delegation = delegations.remove(key.owner, key.token, index.u256());
             delegated[key.owner][key.token][key.consensus] = false;
         } else {
-            delegations.decrease(key.owner, key.token, index.u256(), delta);
+            delegation = delegations.decrease(key.owner, key.token, index.u256(), delta);
         }
 
-        // Update undeledations/bond update
+        // Push new undelegation
         if (cooldowns[key.consensus] > 0) {
             // Add undelegation object if there's cooldown for the consensus contract
             success = true;
-            keyRet = UndelegationKey({
+            keyret = UndelegationKey({
                 owner: key.owner,
                 token: key.token,
                 consensus: key.consensus,
@@ -245,22 +244,23 @@ contract Overload is Lock {
                 amount: delta,
                 completion: block.timestamp + cooldowns[key.consensus]
             });
-            undelegations.add(keyRet);
+            undelegations.add(keyret);
         } else {
-            // If there's no cooldown, we can instantly move tokens to `unbonded`, iff it reduces the maxima value.
+            // If there's no cooldown, we try moving tokens to `unbonded`.
+            // Tokens are moved from to `unbonded` iff it creates a new lower maxima.
             success = true;
-            keyRet = UndelegationLib.zeroKey();
+            keyret = UndelegationLib.zeroKey();
             _bond(key.owner, key.token);
         }
 
         // Update validator and pool
-        validators[key.consensus][key.validator][key.token].decrease(delta);
-        pools[key.consensus][key.token].decrease(
-            validators[key.consensus][key.validator][key.token].head().active,
-            delta
-        );
+        Validator memory validator = validators[key.consensus][key.validator][key.token].decrease(delta);
+        Pool memory pool = pools[key.consensus][key.token].decrease(validator.active, delta);
 
-        return (success, keyRet);
+        // Hook after
+        _afterUndelegatingHook(key.consensus, key, delta, delegation, validator, pool, data);
+
+        return (success, keyret);
     }
 
     function undelegate(UndelegationKey memory key) public lock returns (bool) {
@@ -377,10 +377,11 @@ contract Overload is Lock {
         address target,
         DelegationKey memory key,
         uint256 delta,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) internal {
         if (Call.isContract(target) && ERC165Checker.supportsInterface(target, IOverloadHooks.beforeDelegate.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeDelegate.selector, msg.sender, key, delta, data), false);
+            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeDelegate.selector, msg.sender, key, delta, data), strict);
         }
     }
 
@@ -391,20 +392,68 @@ contract Overload is Lock {
         Delegation memory delegation,
         Validator memory validator,
         Pool memory pool,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) internal {
         if (Call.isContract(target) && ERC165Checker.supportsInterface(target, IOverloadHooks.afterDelegate.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.afterDelegate.selector, msg.sender, key, delta, data), false);
+            Hooks.callHook(
+                target,
+                abi.encodeWithSelector(
+                    IOverloadHooks.afterDelegate.selector,
+                    msg.sender,
+                    key,
+                    delta,
+                    delegation,
+                    validator,
+                    pool,
+                    data
+                ),
+                strict
+            );
+        }
+    }
+
+    function _beforeUndelegatingHook(
+        address target,
+        DelegationKey memory key,
+        uint256 delta,
+        bytes calldata data
+    ) internal {
+        if (Call.isContract(target) && ERC165Checker.supportsInterface(target, IOverloadHooks.beforeDelegate.selector)) {
+            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeUndelegating.selector, msg.sender, key, delta, data), false);
+        }
+    }
+
+    function _afterUndelegatingHook(
+        address target,
+        DelegationKey memory key,
+        uint256 delta,
+        Delegation memory delegation,
+        Validator memory validator,
+        Pool memory pool,
+        bytes calldata data
+    ) internal {
+        if (Call.isContract(target) && ERC165Checker.supportsInterface(target, IOverloadHooks.afterUndelegating.selector)) {
+            Hooks.callHook(
+                target,
+                abi.encodeWithSelector(
+                    IOverloadHooks.afterUndelegating.selector,
+                    msg.sender,
+                    key,
+                    delta,
+                    delegation,
+                    validator,
+                    pool,
+                    data
+                ),
+                false
+            );
         }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   INTERNAL BALANCE LOGIC                   */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    // function _tokenToId(address token) internal returns (uint256) {
-    //     return uint256(uint160(token));
-    // }
 
     function _bondIncrease(address owner, address token, uint256 amount) internal {
         if (amount > bonded[owner][token]) {
@@ -444,4 +493,3 @@ contract Overload is Lock {
         emit Transfer(msg.sender, from, address(0), token, amount);
     }
 }
-// 
