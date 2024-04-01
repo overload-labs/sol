@@ -122,12 +122,6 @@ contract Overload is Lock {
         return true;
     }
 
-    function register(address consensus) public {
-    }
-
-    function unregister(address consensus) public {
-    }
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       OVERLOAD LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -196,7 +190,7 @@ contract Overload is Lock {
 
         // Update validator and pool
         Validator memory validator = validators[key.consensus][key.validator][key.token].increase(delta);
-        Pool memory pool = pools[key.consensus][key.token].increase(validator.active, delta);
+        Pool memory pool = pools[key.consensus][key.token].increase(delta);
 
         // Hook after
         _afterDelegateHook(key.consensus, key, delta, delegation, validator, pool, data, strict);
@@ -255,7 +249,7 @@ contract Overload is Lock {
 
         // Update validator and pool
         Validator memory validator = validators[key.consensus][key.validator][key.token].decrease(delta);
-        Pool memory pool = pools[key.consensus][key.token].decrease(validator.active, delta);
+        Pool memory pool = pools[key.consensus][key.token].decrease(delta);
 
         // Hook after
         _afterUndelegatingHook(key.consensus, key, delta, delegation, validator, pool, data);

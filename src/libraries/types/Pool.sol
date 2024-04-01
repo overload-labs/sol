@@ -2,8 +2,7 @@
 pragma solidity ^0.8.0;
 
 struct Pool {
-    uint256 active;
-    uint256 total;
+    uint256 amount;
 
     uint32 startBlock;
     uint32 endBlock;
@@ -16,8 +15,7 @@ library PoolLib {
 
     function zero() internal pure returns (Pool memory) {
         return Pool({
-            active: 0,
-            total: 0,
+            amount: 0,
             startBlock: 0,
             endBlock: 0
         });
@@ -35,58 +33,47 @@ library PoolLib {
                                  MUTATE
     //////////////////////////////////////////////////////////////*/
 
-    function increase(Pool[] storage checkpoints, bool isActive, uint256 delta) internal returns (Pool memory pool) {
+    function increase(Pool[] storage checkpoints, uint256 delta) internal returns (Pool memory pool) {
         uint256 length = checkpoints.length;
 
         if (length > 0) {
             pool = push(
                 checkpoints,
-                isActive
-                    ? checkpoints[length - 1].active + delta
-                    : checkpoints[length - 1].active,
-                checkpoints[length - 1].total + delta
+                checkpoints[length - 1].amount + delta
             );
         } else {
             pool = push(
                 checkpoints,
-                isActive
-                    ? delta
-                    : 0,
                 delta
             );
         }
     }
 
-    function decrease(Pool[] storage checkpoints, bool isActive, uint256 delta) internal returns (Pool memory pool) {
+    function decrease(Pool[] storage checkpoints, uint256 delta) internal returns (Pool memory pool) {
         uint256 length = checkpoints.length;
 
         if (length > 0) {
             pool = push(
                 checkpoints,
-                isActive
-                    ? checkpoints[length - 1].active - delta
-                    : checkpoints[length - 1].active,
-                checkpoints[length - 1].total - delta
+                checkpoints[length - 1].amount - delta
             );
         } else {
             revert("ValidatorLib: arithmetic underflow");
         }
     }
 
-    function push(Pool[] storage checkpoints, uint256 active, uint256 total) internal returns (Pool memory pool) {
+    function push(Pool[] storage checkpoints, uint256 amount) internal returns (Pool memory pool) {
         uint256 length = checkpoints.length;
 
         if (length > 0 && checkpoints[length - 1].startBlock == block.number) {
-            checkpoints[length - 1].active = uint256(active);
-            checkpoints[length - 1].total = uint256(total);
+            checkpoints[length - 1].amount = uint256(amount);
             pool = head(checkpoints);
         } else {
             if (length > 0) {
                 checkpoints[length - 1].endBlock = uint32(block.number) - uint32(1);
                 checkpoints.push(
                     pool = Pool({
-                        active: uint256(active),
-                        total: uint256(total),
+                        amount: uint256(amount),
                         startBlock: uint32(block.number),
                         endBlock: uint32(0)
                     })
@@ -94,8 +81,7 @@ library PoolLib {
             } else {
                 checkpoints.push(
                     pool = Pool({
-                        active: uint256(active),
-                        total: uint256(total),
+                        amount: uint256(amount),
                         startBlock: uint32(block.number),
                         endBlock: uint32(0)
                     })

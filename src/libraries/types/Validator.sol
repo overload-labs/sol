@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 struct Validator {
     uint256 amount;
-    bool active;
 
     uint32 startBlock;
     uint32 endBlock;
@@ -23,7 +22,6 @@ library ValidatorLib {
     function zero() internal pure returns (Validator memory) {
         return Validator({
             amount: 0,
-            active: false,
             startBlock: 0,
             endBlock: 0
         });
@@ -72,14 +70,12 @@ library ValidatorLib {
                 checkpoints[length - 1].endBlock = uint32(block.number) - uint32(1);
                 checkpoints.push(validator = Validator({
                     amount: uint256(amount),
-                    active: checkpoints[length - 1].active,
                     startBlock: uint32(block.number),
                     endBlock: uint32(0)
                 }));
             } else {
                 checkpoints.push(validator = Validator({
                     amount: uint256(amount),
-                    active: false,
                     startBlock: uint32(block.number),
                     endBlock: uint32(0)
                 }));
