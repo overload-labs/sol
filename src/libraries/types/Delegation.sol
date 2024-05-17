@@ -3,12 +3,14 @@ pragma solidity ^0.8.0;
 
 import {Cast} from "../Cast.sol";
 
+/// @dev `Delegation` objects are unique. There cannot be duplicates inside the mapping.
 struct Delegation {
     address consensus;
     address validator;
     uint256 amount;
 }
 
+/// @dev `DelegationKey`s are used to identify the unique Delegation objects.
 struct DelegationKey {
     address owner;
     address token;
@@ -20,14 +22,6 @@ library DelegationLib {
     /*//////////////////////////////////////////////////////////////
                                  VIEWS
     //////////////////////////////////////////////////////////////*/
-
-    function zero() internal pure returns (Delegation memory) {
-        return Delegation({
-            consensus: address(0),
-            validator: address(0),
-            amount: 0
-        });
-    }
 
     function get(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
@@ -49,6 +43,23 @@ library DelegationLib {
         }
     }
 
+    function position(
+        mapping(address owner => mapping(address token => Delegation[])) storage map,
+        DelegationKey memory key
+    ) internal view returns (int256) {
+        Delegation[] memory delegations = map[key.owner][key.token];
+
+        for (uint256 i = 0; i < delegations.length; i++) {
+            Delegation memory delegation = delegations[i];
+
+            if (key.consensus == delegation.consensus && key.validator == delegation.validator) {
+                return int256(i);
+            }
+        }
+
+        return -1;
+    }
+
     function max(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         address owner,
@@ -65,37 +76,12 @@ library DelegationLib {
         }
     }
 
-    function find(
-        mapping(address owner => mapping(address token => Delegation[])) storage map,
-        DelegationKey memory key,
-        bool strict
-    ) internal view returns (Delegation memory) {
-        int256 index = position(map, key);
-
-        if (index >= 0 && Cast.u256(index) < map[key.owner][key.token].length) {
-            return map[key.owner][key.token][Cast.u256(index)]; 
-        } else {
-            if (strict) {
-                revert("DELEGATION_NOT_FOUND");
-            } else {
-                return zero();
-            }
-        }
-    }
-
-    function position(
-        mapping(address owner => mapping(address token => Delegation[])) storage map,
-        DelegationKey memory key
-    ) internal view returns (int256) {
-        for (uint256 i = 0; i < map[key.owner][key.token].length; i++) {
-            Delegation memory delegation = map[key.owner][key.token][i];
-
-            if (key.consensus == delegation.consensus && key.validator == delegation.validator) {
-                return int256(i);
-            }
-        }
-
-        return -1;
+    function zero() internal pure returns (Delegation memory) {
+        return Delegation({
+            consensus: address(0),
+            validator: address(0),
+            amount: 0
+        });
     }
 
     /*//////////////////////////////////////////////////////////////

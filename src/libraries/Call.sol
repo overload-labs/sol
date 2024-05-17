@@ -2,24 +2,33 @@
 pragma solidity ^0.8.0;
 
 library Call {
-    error FailedCall();
-
     function isContract(address target) internal view returns (bool) {
         return target.code.length > 0;
     }
 
-    function call(address target, bytes memory data, bool strict) internal returns (bool success, bytes memory result) {
+    function functionCall(address target, bytes memory data, bool strict) internal returns (bool, bytes memory) {
         if (target.code.length == 0) {
             return (false, "");
         }
 
-        (success, result) = address(target).call(data);
+        (bool success, bytes memory result) = address(target).call(data);
 
         if (strict && !success) {
             _revert(result);
+        } else {
+            return (success, result);
         }
     }
 
+    /*//////////////////////////////////////////////////////////////
+                              OPENZEPPELIN
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev OpenZeppelin Contracts
+    /// @dev A call to an address target failed. The target may have reverted.
+    error FailedCall();
+
+    /// @dev OpenZeppelin Contracts
     function _revert(bytes memory returndata) private pure {
         // Look for revert reason and bubble it up if present
         if (returndata.length > 0) {

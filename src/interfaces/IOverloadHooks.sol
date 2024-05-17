@@ -2,11 +2,14 @@
 pragma solidity >=0.8.0;
 
 import {Delegation, DelegationKey} from "../libraries/types/Delegation.sol";
-import {Validator} from "../libraries/types/Validator.sol";
-import {Pool} from "../libraries/types/Pool.sol";
+import {Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol";
 
 interface IOverloadHooks {
     function permissions() external view returns (uint256);
+
+    /*//////////////////////////////////////////////////////////////
+                                DELEGATE
+    //////////////////////////////////////////////////////////////*/
 
     function beforeDelegate(
         address sender,
@@ -20,10 +23,31 @@ interface IOverloadHooks {
         DelegationKey memory key,
         uint256 delta,
         Delegation memory delegation,
-        Validator memory validator,
-        Pool memory pool,
         bytes calldata data
     ) external returns (bytes4);
+
+    /*//////////////////////////////////////////////////////////////
+                               REDELEGATE
+    //////////////////////////////////////////////////////////////*/
+
+    function beforeRedelegate(
+        address sender,
+        DelegationKey memory key,
+        uint256 delta,
+        bytes calldata data
+    ) external returns (bytes4);
+
+    function afterRedelegate(
+        address sender,
+        DelegationKey memory key,
+        uint256 delta,
+        Delegation memory delegation,
+        bytes calldata data
+    ) external returns (bytes4);
+
+    /*//////////////////////////////////////////////////////////////
+                              UNDELEGATING
+    //////////////////////////////////////////////////////////////*/    
 
     function beforeUndelegating(
         address sender,
@@ -37,8 +61,22 @@ interface IOverloadHooks {
         DelegationKey memory key,
         uint256 delta,
         Delegation memory delegation,
-        Validator memory validator,
-        Pool memory pool,
+        bytes calldata data
+    ) external returns (bytes4);
+
+    /*//////////////////////////////////////////////////////////////
+                               UNDELEGATE
+    //////////////////////////////////////////////////////////////*/
+
+    function beforeUndelegate(
+        address sender,
+        UndelegationKey memory key,
+        bytes calldata data
+    ) external returns (bytes4);
+
+    function afterUndelegate(
+        address sender,
+        UndelegationKey memory key,
         bytes calldata data
     ) external returns (bytes4);
 }

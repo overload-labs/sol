@@ -21,25 +21,9 @@ struct UndelegationKey {
 }
 
 library UndelegationLib {
-    function zeroKey() internal pure returns (UndelegationKey memory) {
-        return UndelegationKey({
-            owner: address(0),
-            token: address(0),
-            consensus: address(0),
-            validator: address(0),
-            amount: 0,
-            completion: 0
-        });
-    }
-
-    function zero() internal pure returns (Undelegation memory) {
-        return Undelegation({
-            consensus: address(0),
-            validator: address(0),
-            amount: 0,
-            completion: 0
-        });
-    }
+    /*//////////////////////////////////////////////////////////////
+                                 VIEWS
+    //////////////////////////////////////////////////////////////*/
 
     function get(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
@@ -53,7 +37,7 @@ library UndelegationLib {
             delegation = map[key.owner][key.token][Cast.u256(index)];
         } else {
             if (strict) {
-                revert("Undelegation.get: NOT_FOUND");
+                revert("NOT_FOUND");
             } else {
                 index = -1;
                 delegation = zero();
@@ -61,24 +45,9 @@ library UndelegationLib {
         }
     }
 
-    function find(
-        mapping(address owner => mapping(address token => Undelegation[])) storage map,
-        UndelegationKey memory key,
-        bool strict
-    ) internal view returns (Undelegation memory) {
-        int256 index = position(map, key);
-
-        if (index >= 0 && Cast.u256(index) < map[key.owner][key.token].length) {
-            return map[key.owner][key.token][Cast.u256(index)]; 
-        } else {
-            if (strict) {
-                revert("UNDELEGATION_NOT_FOUND");
-            } else {
-                return zero();
-            }
-        }
-    }
-
+    /// @dev Undelegations are not unique, even with completion timestamp are included. Although, this is fine as two
+    ///     identital keys are effectively also imply objects being identical. Hence, fetching for an object with a key will
+    ///     return the first match.
     function position(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
         UndelegationKey memory key
@@ -98,6 +67,30 @@ library UndelegationLib {
 
         return -1;
     }
+
+    function zero() internal pure returns (Undelegation memory) {
+        return Undelegation({
+            consensus: address(0),
+            validator: address(0),
+            amount: 0,
+            completion: 0
+        });
+    }
+
+    function zeroKey() internal pure returns (UndelegationKey memory) {
+        return UndelegationKey({
+            owner: address(0),
+            token: address(0),
+            consensus: address(0),
+            validator: address(0),
+            amount: 0,
+            completion: 0
+        });
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                 MUTATE
+    //////////////////////////////////////////////////////////////*/
 
     function add(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
