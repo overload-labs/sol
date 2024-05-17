@@ -6,9 +6,13 @@ import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 
 import {Overload} from "../src/Overload.sol";
 import {Delegation, DelegationKey} from "../src/libraries/types/Delegation.sol";
+import {TokenId} from "../src/libraries/TokenId.sol";
 import {UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 
 contract OverloadTest is Test {
+    using TokenId for uint256;
+    using TokenId for address;
+
     ERC20Mock token;
     Overload overload;
 
@@ -46,7 +50,7 @@ contract OverloadTest is Test {
     function test_deposit() public {
         deposit(address(0xBEEF), address(token), 100);
 
-        assertEq(overload.unbonded(address(0xBEEF), address(token)), 100);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 100);
     }
 
     function test_delegate() public {
@@ -66,7 +70,7 @@ contract OverloadTest is Test {
         assertEq(amount, 70);
         assertEq(overload.getDelegationCardinality(address(0xBEEF), address(token)), 1);
 
-        assertEq(overload.unbonded(address(0xBEEF), address(token)), 30);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 30);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 70);
     }
 
@@ -100,7 +104,7 @@ contract OverloadTest is Test {
         assertEq(overload.getDelegation(key).validator, address(0xABCD));
         assertEq(overload.getDelegation(key).amount, 80);
 
-        assertEq(overload.unbonded(address(0xBEEF), address(token)), 20);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 20);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 80);
     }
 
@@ -154,7 +158,7 @@ contract OverloadTest is Test {
         assertEq(overload.getDelegation(key).amount, 50);
 
         assertEq(overload.getDelegationCardinality(address(0xBEEF), address(token)), 2);
-        assertEq(overload.unbonded(address(0xBEEF), address(token)), 30);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 30);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 70);
 
         // ===
@@ -165,7 +169,7 @@ contract OverloadTest is Test {
         assertEq(overload.getDelegation(key).consensus, address(0xC1));
         assertEq(overload.getDelegation(key).validator, address(0xABCD));
         assertEq(overload.getDelegation(key).amount, 95);
-        assertEq(overload.unbonded(address(0xBEEF), address(token)), 5);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 5);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 95);
     }
 
@@ -196,7 +200,7 @@ contract OverloadTest is Test {
             ""
         );
 
-        assertEq(overload.unbonded(address(0xBEEF), address(token)), 75);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 75);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 25);
     }
 
@@ -369,7 +373,7 @@ contract OverloadTest is Test {
         overload.undelegate(key);
     }
 
-    function test_flush() public {
+    function test_undelegateAll() public {
         deposit(address(0xBEEF), address(token), 100);
 
         vm.prank(address(0xBEEF));
@@ -414,7 +418,7 @@ contract OverloadTest is Test {
         vm.warp(block.timestamp + 999);
 
         vm.prank(address(0xBEEF));
-        (uint256 success, uint256 failure) = overload.flush(address(0xBEEF), address(token));
+        (uint256 success, uint256 failure) = overload.undelegateAll(address(0xBEEF), address(token));
         assertEq(success, 1);
         assertEq(failure, 1);
     }

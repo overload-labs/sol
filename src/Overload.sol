@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IERC20} from "./interfaces/IERC20.sol";
 import {IOverloadHooks} from "./interfaces/IOverloadHooks.sol";
 
 import {Call} from "./libraries/Call.sol";
@@ -16,13 +17,18 @@ import {Pool, PoolLib} from "./libraries/types/Pool.sol";
 import {Undelegation, UndelegationKey, UndelegationLib} from "./libraries/types/Undelegation.sol";
 import {Validator, ValidatorLib} from "./libraries/types/Validator.sol";
 
+import {TokenId} from "./libraries/TokenId.sol";
+import {ERC6909} from "./tokens/ERC6909.sol";
+
 /// @author @uniswap/v4-core (https://github.com/Uniswap/v4-core/blob/main/src/ERC6909.sol)
 /// @author @egozoq (https://github.com/egozoq)
-contract Overload is Lock {
+contract Overload is ERC6909, Lock {
     using Cast for uint256;
     using Cast for int256;
     using DelegationLib for mapping(address owner => mapping(address token => Delegation[]));
     using PoolLib for Pool[];
+    using TokenId for uint256;
+    using TokenId for address;
     using UndelegationLib for mapping(address owner => mapping(address token => Undelegation[]));
     using ValidatorLib for Validator[];
 
@@ -30,20 +36,13 @@ contract Overload is Lock {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    event OperatorSet(address indexed owner, address indexed operator, bool approved);
-    event Approval(address indexed owner, address indexed spender, address indexed token, uint256 amount);
-    event Transfer(address caller, address indexed from, address indexed to, address indexed token, uint256 amount);
+
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// ERC-6909 storage
-    mapping(address owner => mapping(address spender => bool)) public isOperator;
-    mapping(address owner => mapping(address spender => mapping(address token => uint256 amount))) public allowance;
-
     // Canonical token accounting
-    mapping(address owner => mapping(address token => uint256 amount)) public unbonded;
     mapping(address owner => mapping(address token => uint256 amount)) public bonded;
 
     // Retokenization through delegations
@@ -52,6 +51,8 @@ contract Overload is Lock {
     mapping(address owner => mapping(address token => Undelegation[])) public undelegations;
 
     // Validators' stake and pool's stake
+    uint256 public maxCoolDown = 2_629_746; // 1 month
+    uint256 public maxJailTime = 7_889_238; // 3 month
     mapping(address consensus => uint256 cooldown) public cooldowns;
     mapping(address consensus => mapping(address validator => Metadata)) public metadata;
     mapping(address consensus => mapping(address validator => mapping(address token => Validator[]))) public validators;
@@ -107,7 +108,7 @@ contract Overload is Lock {
 
     function setCooldown(address consensus, uint256 cooldown) public lock returns (bool) {
         require(msg.sender == consensus || isOperator[consensus][msg.sender], "UNAUTHORIZED");
-        require(cooldown <= 31_556_952, "COOLDOWN_TOO_HIGH"); // max 1 year cooldown
+        require(cooldown <= maxCoolDown, "COOLDOWN_TOO_HIGH");
 
         cooldowns[consensus] = cooldown;
 
@@ -123,54 +124,56 @@ contract Overload is Lock {
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       OVERLOAD LOGIC                       */
+    /*                           ERC-20                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function deposit(address owner, address token, uint256 amount) public lock returns (bool) {
-        require(IERC20(token).transferFrom(msg.sender, address(this), amount), "ERC20");
-        _mint(owner, token, amount);
+        SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
+        _mint(owner, token.convertToId(), amount);
 
         return true;
     }
 
     function withdraw(address owner, address token, uint256 amount, address recipient) public lock returns (bool) {
         if (msg.sender != owner && !isOperator[owner][msg.sender]) {
-            uint256 allowed = allowance[owner][msg.sender][token];
+            uint256 allowed = allowance[owner][msg.sender][token.convertToId()];
 
             if (allowed != type(uint256).max) {
-                allowance[owner][msg.sender][token] = allowed - amount;
+                allowance[owner][msg.sender][token.convertToId()] = allowed - amount;
             }
         }
 
-        _burn(owner, token, amount);
-        require(IERC20(token).transfer(recipient, amount), "ERC20");
+        _burn(owner, token.convertToId(), amount);
+        SafeERC20.safeTransfer(IERC20(token), recipient, amount);
 
         return true;
     }
 
-    // function delegate(DelegationKey memory key, uint256 delta, bytes calldata data) public lock returns (bool) {
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         RESTAKING                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) public lock returns (bool) {
-        // Checks
+        // Check for owner or approval
         if (msg.sender != key.owner && !isOperator[key.owner][msg.sender]) {
-            uint256 allowed = allowance[key.owner][msg.sender][key.token];
+            uint256 allowed = allowance[key.owner][msg.sender][key.token.convertToId()];
 
             if (allowed != type(uint256).max) {
-                allowance[key.owner][msg.sender][key.token] = allowed - delta;
+                allowance[key.owner][msg.sender][key.token.convertToId()] = allowed - delta;
             }
         }
-        uint256 balance = unbonded[key.owner][key.token] + bonded[key.owner][key.token];
+
+        // Check for delegation to not overflow
+        uint256 balance = balanceOf[key.owner][key.token.convertToId()] + bonded[key.owner][key.token];
         require(delta <= balance, "OVERFLOW_AMT");
 
         // Hook before
         _beforeDelegateHook(key.consensus, key, delta, data, strict);
 
-        // Update delegation
+        // Manage delegation
         Delegation memory delegation;
         if (delegated[key.owner][key.token][key.consensus]) {
-            /**
-             * If delegation already exists for `consensus`, then find delegation and then increase
-             */
-
+            // If delegation already exists for `consensus`, then find delegation and then increase
             int256 index;
             (delegation, index) = delegations.get(key, true);
             uint256 amount = delegation.amount + delta;
@@ -179,10 +182,7 @@ contract Overload is Lock {
             _bondIncrease(key.owner, key.token, amount);
             delegation = delegations.increase(key.owner, key.token, index.u256(), delta);
         } else {
-            /**
-             * If no existing delegation exists, push a new delegation into array
-             */
-
+            // If no existing delegation exists, push a new delegation into the array
             _bondIncrease(key.owner, key.token, delta);
             delegated[key.owner][key.token][key.consensus] = true;
             delegation = delegations.push(key, delta);
@@ -257,6 +257,40 @@ contract Overload is Lock {
         return (success, keyret);
     }
 
+    function undelegatingCancel(UndelegationKey memory key) public lock returns (bool) {
+        require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
+
+        (Undelegation memory undelegation, int256 index) = undelegations.get(key, true);
+        require(key.consensus == undelegation.consensus);
+        require(key.validator == undelegation.validator);
+        require(key.amount == undelegation.amount);
+        require(index >= 0, "FATAL");
+
+        // Manage delegation
+        DelegationKey memory delegationKey = DelegationKey({
+            owner: key.owner,
+            token: key.token,
+            consensus: key.consensus,
+            validator: key.validator
+        });
+        Delegation memory delegation;
+        if (delegated[key.owner][key.token][key.consensus]) {
+            // If delegation already exists for `consensus`, then find delegation and then increase
+            (delegation, index) = delegations.get(delegationKey, true);
+            delegation = delegations.increase(key.owner, key.token, index.u256(), undelegation.amount);
+        } else {
+            // If no existing delegation exists, push a new delegation into the array
+            delegated[key.owner][key.token][key.consensus] = true;
+            delegation = delegations.push(delegationKey, undelegation.amount);
+        }
+
+        // Update validator and pool
+        Validator memory validator = validators[key.consensus][key.validator][key.token].increase(undelegation.amount);
+        Pool memory pool = pools[key.consensus][key.token].increase(undelegation.amount);
+
+        return true;
+    }
+
     function undelegate(UndelegationKey memory key) public lock returns (bool) {
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
 
@@ -273,13 +307,7 @@ contract Overload is Lock {
         return true;
     }
 
-    function cancel(UndelegationKey memory key) public lock returns (bool) {
-        require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
-
-        return true;
-    }
-
-    function flush(address owner, address token) public lock returns (uint256 success, uint256 failed) {
+    function undelegateAll(address owner, address token) public lock returns (uint256 success, uint256 failed) {
         require(msg.sender == owner || isOperator[owner][msg.sender]);
 
         // Start iterating from the last element towards the first
@@ -308,60 +336,10 @@ contract Overload is Lock {
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       ERC-6909 LOGIC                       */
+    /*                            JAIL                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function transfer(address to, address token, uint256 amount) public lock returns (bool) {
-        unbonded[msg.sender][token] -= amount;
-        unbonded[to][token] += amount;
 
-        emit Transfer(msg.sender, msg.sender, to, token, amount);
-
-        return true;
-    }
-
-    function transferFrom(address from, address to, address token, uint256 amount) public lock returns (bool) {
-        if (!isOperator[from][msg.sender]) {
-            uint256 allowed = allowance[from][msg.sender][token];
-
-            if (allowed != type(uint256).max) {
-                allowance[from][msg.sender][token] = allowed - amount;
-            }
-        }
-
-        unbonded[from][token] -= amount;
-        unbonded[to][token] += amount;
-
-        emit Transfer(msg.sender, from, to, token, amount);
-
-        return true;
-    }
-
-    function approve(address spender, address token, uint256 amount) public lock returns (bool) {
-        allowance[msg.sender][spender][token] = amount;
-
-        emit Approval(msg.sender, spender, token, amount);
-
-        return true;
-    }
-
-    function setOperator(address operator, bool approved) public lock returns (bool) {
-        isOperator[msg.sender][operator] = approved;
-
-        emit OperatorSet(msg.sender, operator, approved);
-
-        return true;
-    }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       ERC-165 LOGIC                        */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
-        return
-            interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == 0x0f632fb3; // ERC165 Interface ID for ERC6909
-    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         HOOK CALLS                         */
@@ -453,7 +431,7 @@ contract Overload is Lock {
         if (amount > bonded[owner][token]) {
             uint256 delta = amount - bonded[owner][token];
 
-            unbonded[owner][token] -= delta;
+            balanceOf[owner][token.convertToId()] -= delta;
             bonded[owner][token] += delta;
         }
     }
@@ -465,25 +443,13 @@ contract Overload is Lock {
         int256 delta = max.i256() - bonded[owner][token].i256();
 
         if (delta > 0) {
-            unbonded[owner][token] -= delta.u256();
+            balanceOf[owner][token.convertToId()] -= delta.u256();
             bonded[owner][token] += delta.u256();
         } else if (delta < 0) {
-            unbonded[owner][token] += (-delta).u256();
+            balanceOf[owner][token.convertToId()] += (-delta).u256();
             bonded[owner][token] -= (-delta).u256();
         } else {
             return;
         }
-    }
-
-    function _mint(address to, address token, uint256 amount) internal {
-        unbonded[to][token] += amount;
-
-        emit Transfer(msg.sender, address(0), to, token, amount);
-    }
-
-    function _burn(address from, address token, uint256 amount) internal {
-        unbonded[from][token] -= amount;
-
-        emit Transfer(msg.sender, from, address(0), token, amount);
     }
 }
