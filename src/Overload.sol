@@ -225,10 +225,19 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         return (true, undelegationKey);
     }
 
-    function undelegate(UndelegationKey memory key, bytes calldata data) public lock returns (bool) {
+    function undelegate(UndelegationKey memory key, int256 position, bytes calldata data) public lock returns (bool) {
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
 
-        (Undelegation memory undelegation, int256 index) = undelegations.get(key, true);
+        Undelegation memory undelegation;
+        int256 index;
+
+        if (position >= 0) {
+            undelegation = undelegations[key.owner][key.token][position.u256()];
+            index = position;
+        } else {
+            (undelegation, index) = undelegations.get(key, true);
+        }
+
         require(key.consensus == undelegation.consensus);
         require(key.validator == undelegation.validator);
         require(key.amount == undelegation.amount);
@@ -245,42 +254,6 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         _afterUndelegateHook(key.consensus, key, data);
 
         return true;
-    }
-
-    function undelegateAll(
-        address owner,
-        address token,
-        bytes calldata data
-    ) public lock returns (uint256 success, uint256 failed) {
-        require(msg.sender == owner || isOperator[owner][msg.sender]);
-
-        // Start iterating from the last element towards the first
-        for (uint256 i = undelegations[owner][token].length; i > 0; i--) {
-            uint256 index = i - 1; // Adjust index because arrays are 0-indexed
-
-            if (undelegations[owner][token][index].completion <= block.timestamp) {
-                Undelegation memory undelegation = undelegations[owner][token][index];
-                UndelegationKey memory key = UndelegationKey({
-                    owner: owner,
-                    token: token,
-                    consensus: undelegation.consensus,
-                    validator: undelegation.validator,
-                    amount: undelegation.amount,
-                    completion: undelegation.completion
-                });
-
-                _beforeUndelegateHook(key.consensus, key, data);
-
-                undelegations.remove(key, index);
-                success += 1;
-
-                _afterUndelegateHook(key.consensus, key, data);
-            } else {
-                failed += 1;
-            }
-        }
-
-        _bondUpdate(owner, token);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
