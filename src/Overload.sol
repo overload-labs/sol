@@ -77,10 +77,13 @@ contract Overload is OverloadHooks, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function deposit(address owner, address token, uint256 amount) public lock returns (bool) {
+        uint256 balance = IERC20(token).balanceOf(address(this));
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
-        _mint(owner, token.convertToId(), amount);
+        uint256 deposited = IERC20(token).balanceOf(address(this)) - balance;
 
-        emit Deposit(msg.sender, owner, token, amount);
+        _mint(owner, token.convertToId(), deposited);
+
+        emit Deposit(msg.sender, owner, token, deposited);
 
         return true;
     }
