@@ -28,8 +28,15 @@ contract Overload is OverloadHooks, ERC6909, Lock {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    event SetCooldown(address indexed consensus, uint256 cooldown);
+    event SetJailtime(address indexed consensus, uint256 jailtime);
+
     event Deposit(address indexed caller, address indexed owner, address indexed token, uint256 amount);
     event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);
+    event Delegate(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
+    event Redelegate(DelegationKey indexed from, DelegationKey indexed to, bytes data);
+    event Undelegating(DelegationKey indexed key, uint256 delta, bytes data);
+    event Undelegate(UndelegationKey indexed key, int256 position, bytes data);
     event Jail(address indexed consensus, address indexed validator, uint256 timestamp);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -60,6 +67,8 @@ contract Overload is OverloadHooks, ERC6909, Lock {
 
         cooldowns[consensus] = cooldown;
 
+        emit SetCooldown(consensus, cooldown);
+
         return true;
     }
 
@@ -68,6 +77,8 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         require(jailtime <= maxJailTime, "JAILTIME_TOO_HIGH");
 
         jailtimes[consensus] = jailtime;
+
+        emit SetJailtime(consensus, jailtime);
 
         return true;
     }
@@ -149,6 +160,8 @@ contract Overload is OverloadHooks, ERC6909, Lock {
 
         _afterDelegateHook(key.consensus, key, delta, delegation, data, strict);
 
+        emit Delegate(key, delta, data, strict);
+
         return true;
     }
 
@@ -166,6 +179,8 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         delegations[from.owner][from.token][index.u256()].validator = to.validator;
 
         _afterRedelegateHook(from.consensus, from, to, data, true);
+
+        emit Redelegate(from, to, data);
 
         return true;
     }
@@ -225,6 +240,8 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         // Non-strict hook call
         _afterUndelegatingHook(key.consensus, key, delta, delegation, data);
 
+        emit Undelegating(key, delta, data);
+
         return (true, undelegationKey);
     }
 
@@ -255,6 +272,8 @@ contract Overload is OverloadHooks, ERC6909, Lock {
 
         // Non-strict hook call
         _afterUndelegateHook(key.consensus, key, data);
+
+        emit Undelegate(key, position, data);
 
         return true;
     }
