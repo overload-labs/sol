@@ -85,10 +85,11 @@ abstract contract OverloadHooks {
         address target,
         DelegationKey memory key,
         uint256 delta,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IOverloadHooks.beforeUndelegating.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeUndelegating.selector, msg.sender, key, delta, data), false);
+            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
         }
     }
 
@@ -97,7 +98,8 @@ abstract contract OverloadHooks {
         DelegationKey memory key,
         uint256 delta,
         Delegation memory delegation,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IOverloadHooks.afterUndelegating.selector)) {
             Hooks.callHook(
@@ -110,7 +112,7 @@ abstract contract OverloadHooks {
                     delegation,
                     data
                 ),
-                false
+                strict
             );
         }
     }

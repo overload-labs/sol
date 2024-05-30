@@ -20,6 +20,20 @@ library Call {
         }
     }
 
+    function functionCallGas(address target, uint256 gas, bytes memory data, bool strict) internal returns (bool, bytes memory) {
+        if (target.code.length == 0) {
+            return (false, "");
+        }
+
+        (bool success, bytes memory result) = address(target).call{gas: gas}(data);
+
+        if (strict && !success) {
+            _revert(result);
+        } else {
+            return (success, result);
+        }
+    }
+
     /*//////////////////////////////////////////////////////////////
                               OPENZEPPELIN
     //////////////////////////////////////////////////////////////*/

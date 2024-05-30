@@ -43,18 +43,20 @@ contract Overload is OverloadHooks, ERC6909, Lock {
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    // Variables
+    uint256 public maxDelegations = 256;
+    uint256 public maxQueueTime = 604_800; // 7 days
+    uint256 public maxJailTime = 604_800; // 7 days
+    uint256 public minJailCooldown = 86_400; // 1 day
+
     // Canonical token accounting
     mapping(address owner => mapping(address token => uint256 amount)) public bonded;
 
-    uint256 public maxDelegations = 128;
     mapping(address owner => mapping(address token => mapping(address consensus => bool))) public delegated;
     mapping(address owner => mapping(address token => Delegation[])) public delegations;
     mapping(address owner => mapping(address token => Undelegation[])) public undelegations;
 
-    uint256 public maxCoolDown = 2_629_746; // 1 month
-    uint256 public maxJailTime = 2_629_746; // 1 month
     mapping(address consensus => uint256 cooldown) public cooldowns;
-    mapping(address consensus => uint256 jailtime) public jailtimes;
     mapping(address consensus => mapping(address validator => uint256 timestamp)) public jailed;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -63,22 +65,11 @@ contract Overload is OverloadHooks, ERC6909, Lock {
 
     function setCooldown(address consensus, uint256 cooldown) public lock returns (bool) {
         require(msg.sender == consensus || isOperator[consensus][msg.sender], "UNAUTHORIZED");
-        require(cooldown <= maxCoolDown, "COOLDOWN_TOO_HIGH");
+        require(cooldown <= maxQueueTime, "COOLDOWN_TOO_HIGH");
 
         cooldowns[consensus] = cooldown;
 
         emit SetCooldown(consensus, cooldown);
-
-        return true;
-    }
-
-    function setJailtime(address consensus, uint256 jailtime) public lock returns (bool) {
-        require(msg.sender == consensus || isOperator[consensus][msg.sender], "UNAUTHORIZED");
-        require(jailtime <= maxJailTime, "JAILTIME_TOO_HIGH");
-
-        jailtimes[consensus] = jailtime;
-
-        emit SetJailtime(consensus, jailtime);
 
         return true;
     }
@@ -165,7 +156,11 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         return true;
     }
 
-    function redelegate(DelegationKey memory from, DelegationKey memory to, bytes calldata data) public lock returns (bool) {
+    function redelegate(
+        DelegationKey memory from,
+        DelegationKey memory to,
+        bytes calldata data
+    ) public lock returns (bool) {
         require(from.owner == to.owner, "MISMATCH_OWNER");
         require(from.token == to.token, "MISMATCH_TOKEN");
         require(from.consensus == to.consensus, "MISMATCH_CONSENSUS");
@@ -189,7 +184,8 @@ contract Overload is OverloadHooks, ERC6909, Lock {
     function undelegating(
         DelegationKey memory key,
         uint256 delta,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) public lock returns (bool, UndelegationKey memory undelegationKey) {
         // Check parameters
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
@@ -208,7 +204,7 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         require(jailed[key.consensus][key.validator] <= block.timestamp, "JAILED");
 
         // Non-strict hook call
-        _beforeUndelegatingHook(key.consensus, key, delta, data);
+        _beforeUndelegatingHook(key.consensus, key, delta, data, strict);
 
         // Update the delegation
         if (delta == delegation.amount) {
@@ -238,7 +234,7 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         }
 
         // Non-strict hook call
-        _afterUndelegatingHook(key.consensus, key, delta, delegation, data);
+        _afterUndelegatingHook(key.consensus, key, delta, delegation, data, strict);
 
         emit Undelegating(key, delta, data);
 
@@ -282,10 +278,14 @@ contract Overload is OverloadHooks, ERC6909, Lock {
     /*                            JAIL                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function jail(address validator) public lock returns (bool) {
-        jailed[msg.sender][validator] = block.timestamp + jailtimes[msg.sender];
+    function jail(address validator, uint256 jailtime) public lock returns (bool) {
+        require(jailed[msg.sender][validator] + minJailCooldown <= block.timestamp);
+        require(jailtime <= maxJailTime);
 
-        emit Jail(msg.sender, validator, block.timestamp + jailtimes[msg.sender]);
+        if (jailtime > 0) {
+            jailed[msg.sender][validator] = block.timestamp + jailtime;
+            emit Jail(msg.sender, validator, block.timestamp + jailtime);
+        }
 
         return true;
     }
