@@ -28,7 +28,7 @@ contract Overload is OverloadHooks, ERC6909, Lock {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    event SetCooldown(address indexed consensus, uint256 cooldown);
+    event SetUndelegatingDelay(address indexed consensus, uint256 cooldown);
     event SetJailtime(address indexed consensus, uint256 jailtime);
 
     event Deposit(address indexed caller, address indexed owner, address indexed token, uint256 amount);
@@ -45,7 +45,7 @@ contract Overload is OverloadHooks, ERC6909, Lock {
 
     // Variables
     uint256 public maxDelegations = 256;
-    uint256 public maxQueueTime = 604_800; // 7 days
+    uint256 public maxUndelegatingDelay = 604_800; // 7 days
     uint256 public maxJailTime = 604_800; // 7 days
     uint256 public minJailCooldown = 86_400; // 1 day
 
@@ -56,20 +56,20 @@ contract Overload is OverloadHooks, ERC6909, Lock {
     mapping(address owner => mapping(address token => Delegation[])) public delegations;
     mapping(address owner => mapping(address token => Undelegation[])) public undelegations;
 
-    mapping(address consensus => uint256 cooldown) public cooldowns;
+    mapping(address consensus => uint256 delay) public undelegatingDelay;
     mapping(address consensus => mapping(address validator => uint256 timestamp)) public jailed;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ADMIN                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function setCooldown(address consensus, uint256 cooldown) public lock returns (bool) {
+    function setUndelegatingDelay(address consensus, uint256 delay) public lock returns (bool) {
         require(msg.sender == consensus || isOperator[consensus][msg.sender], "UNAUTHORIZED");
-        require(cooldown <= maxQueueTime, "COOLDOWN_TOO_HIGH");
+        require(delay <= maxUndelegatingDelay, "COOLDOWN_TOO_HIGH");
 
-        cooldowns[consensus] = cooldown;
+        undelegatingDelay[consensus] = delay;
 
-        emit SetCooldown(consensus, cooldown);
+        emit SetUndelegatingDelay(consensus, delay);
 
         return true;
     }
@@ -215,7 +215,7 @@ contract Overload is OverloadHooks, ERC6909, Lock {
         }
 
         // Push new undelegation
-        if (cooldowns[key.consensus] > 0) {
+        if (undelegatingDelay[key.consensus] > 0) {
             // Add undelegation object if there's cooldown for the consensus contract
             undelegationKey = UndelegationKey({
                 owner: key.owner,
@@ -223,7 +223,7 @@ contract Overload is OverloadHooks, ERC6909, Lock {
                 consensus: key.consensus,
                 validator: key.validator,
                 amount: delta,
-                completion: block.timestamp + cooldowns[key.consensus]
+                completion: block.timestamp + undelegatingDelay[key.consensus]
             });
             undelegations.add(undelegationKey);
         } else {
