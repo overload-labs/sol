@@ -27,7 +27,6 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event SetUndelegatingDelay(address indexed consensus, uint256 cooldown);
-    event SetJailtime(address indexed consensus, uint256 jailtime);
 
     event Deposit(address indexed caller, address indexed owner, address indexed token, uint256 amount);
     event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);
@@ -51,7 +50,6 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     error Zero();
 
     // Specific errors
-    error ValueExceedsLimit();
     error ValueExceedsMaxDelay();
     error ValueExceedsMaxJailtime();
     error MaxDelegationsReached();
