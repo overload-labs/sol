@@ -6,7 +6,7 @@
 </p>
 <br />
 
-This repository contains the core contracts for Overload, the `Overload.sol` contract.
+This repository contains the core contract, `Overload.sol`, for Overload. AVSs built on top of `Overload.sol` is expected to implement `IHOverload.sol` which is the interface for hook callbacks.
 
 ## Contracts
 
@@ -38,7 +38,9 @@ src/
 
 ## Overview
 
-`Overload.sol` contract accounts for deposited tokens using the `ERC-6909.sol` standard. When ERC-20 tokens are deposited using the `deposit` function, balance is creditted to the `owner` in ERC-6909's `balanceOf` mapping.
+`Overload.sol` contract accounts for deposited tokens using the `ERC-6909.sol` standard. When ERC-20 tokens are deposited using the `deposit` function, balance is credited to the `owner` in the ERC-6909 `balanceOf` mapping.
+
+### Restaking
 
 After depositing tokens into `Overload.sol`, it becomes possible to `delegate` any amount of `balanceOf` value, to any address. The delegation interface looks as follows
 
@@ -76,6 +78,8 @@ and the three state transitions are strictly
 
 that can be called to move between all states.
 
+### Strict Mode
+
 The main interface for Overload that users are expected to interact with are the six methods in the below.
 
 | Method | Strict Mode |
@@ -88,6 +92,23 @@ The main interface for Overload that users are expected to interact with are the
 | `undelegate` | Optional |
 
 The table above enables users to restake to any external contract without falling trap to risking malicious code. We will walk through the examples below of an example implementation that covers perspectives from both `Overload.sol` and and `Consensus.sol` (AVS) contract.
+
+### Hooks
+
+When building a consensus contract inheriting `IHOverload.sol` fully, we expect the behaviour to be as follows.
+
+| Hooks | Strict Mode | Result |
+| :--- | :--- | :--- |
+| `beforeDelegate`, `afterDelegate` | Yes | `OK` |
+| `beforeDelegate`, `afterDelegate` | No | Do nothing. If the hook call fails, then the consensus contract should not register anything. |
+| `beforeUndelegation`, `afterUndelegation` | Yes | `OK` |
+| `beforeUndelegation`, `afterUndelegation` | No | This is where the consensus contract needs to work within the `gasBudget` of `1_000_000`, as `Overload.sol` will guarantee that. Consensus contracts that use more than `1_000_000` is undefined behaviour. |
+| `beforeRedelegate`, `afterRedelegate` | Yes | `OK` |
+| `beforeRedelegate`, `afterRedelegate` | No | The hook calls have a gas budget of `1_000_000`, otherwise undefined behaviour. |
+| `beforeUndelegate`, `afterUndelegate` | Yes | `OK` |
+| `beforeUndelegate`, `afterUndelegate` | No | The hook calls have a gas budget of `1_000_000`, otherwise undefined behaviour. |
+
+The gas budget pattern is important to prevent consensus contracts holding assets hostage. This way, a restaker will always be able to withdraw their assets regardless of external contract code, and a consensus contract can enforce correct behaviour as long as the gas used for code execution stays below `1_000_000` gas units.
 
 ## Build
 

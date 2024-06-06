@@ -185,7 +185,8 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     function redelegate(
         DelegationKey memory from,
         DelegationKey memory to,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) public lock returns (bool) {
         require(from.owner == to.owner, MismatchAddress(from.owner, to.owner));
         require(from.token == to.token, MismatchAddress(from.token, to.token));
@@ -195,11 +196,11 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         (, int256 index) = delegations.get(from, true);
         require(index >= 0, NotFound());
 
-        _beforeRedelegateHook(from.consensus, gasBudget, from, to, data, true);
+        _beforeRedelegateHook(from.consensus, gasBudget, from, to, data, strict);
 
         delegations[from.owner][from.token][index.u256()].validator = to.validator;
 
-        _afterRedelegateHook(from.consensus, gasBudget, from, to, data, true);
+        _afterRedelegateHook(from.consensus, gasBudget, from, to, data, strict);
 
         emit Redelegate(from, to, data);
 
