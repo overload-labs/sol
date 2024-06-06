@@ -1,30 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-library CallLib {
+library FunctionCallLib {
+    /// @notice There's no code at `target` (it is not a contract).
+    /// @dev OpenZeppelin Contracts @ 5.0.2
+    error AddressEmptyCode(address target);
+    /// @notice A call to an address target failed. The target may have reverted.
+    /// @dev OpenZeppelin Contracts @ 5.0.2
+    error FailedCall();
+
     function functionCall(address target, bytes memory data, bool strict) internal returns (bool, bytes memory) {
-        if (target.code.length == 0) {
-            return (false, "");
-        }
-
-        (bool success, bytes memory result) = address(target).call(data);
-
-        if (strict && !success) {
-            _revert(result);
-        } else {
-            return (success, result);
-        }
+        return functionCallGas(target, 0, data, strict);
     }
 
     function functionCallGas(address target, uint256 gas, bytes memory data, bool strict) internal returns (bool, bytes memory) {
-        if (target.code.length == 0) {
-            return (false, "");
-        }
+        require(gasleft() >= gas);
 
         (bool success, bytes memory result) = address(target).call{gas: gas}(data);
 
-        if (strict && !success) {
-            _revert(result);
+        if (strict) {
+            if (!success) {
+                _revert(result);
+            } else {
+                if (result.length == 0 && target.code.length == 0) {
+                    revert AddressEmptyCode(target);
+                } else {
+                    return (success, result);
+                }
+            }
         } else {
             return (success, result);
         }
@@ -34,11 +37,8 @@ library CallLib {
                               OPENZEPPELIN
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev OpenZeppelin Contracts
-    /// @dev A call to an address target failed. The target may have reverted.
-    error FailedCall();
-
-    /// @dev OpenZeppelin Contracts
+    /// @notice Reverts with returndata if present. Otherwise reverts with {Errors.FailedCall}.
+    /// @dev OpenZeppelin Contracts @ 5.0.2
     function _revert(bytes memory returndata) private pure {
         // Look for revert reason and bubble it up if present
         if (returndata.length > 0) {

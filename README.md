@@ -27,9 +27,9 @@ src/
 │  ├─ types/
 │  │  ├─ Delegation.sol
 │  │  └─ Undelegation.sol
-│  ├─ CallLib.sol
 │  ├─ CastLib.sol
-│  ├─ HooksLib.sol
+│  ├─ FunctionCallLib.sol
+│  ├─ HookCallLib.sol
 │  └─ TokenIdLib.sol
 ├─ tokens/
 │  └─ ERC6909.sol

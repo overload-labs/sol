@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import {IHOverload} from "../interfaces/IHOverload.sol";
-import {HooksLib} from "../libraries/HooksLib.sol";
+import {HookCallLib} from "../libraries/HookCallLib.sol";
 import {DelegationLib, Delegation, DelegationKey} from "../libraries/types/Delegation.sol";
 import {UndelegationLib, Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol";
 
@@ -23,7 +23,7 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
-            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeDelegate.selector, msg.sender, key, delta, data), strict);
+            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeDelegate.selector, msg.sender, key, delta, data), strict);
         }
     }
 
@@ -36,7 +36,7 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterDelegate.selector)) {
-            HooksLib.callHook(
+            HookCallLib.functionCallHook(
                 target,
                 abi.encodeWithSelector(
                     IHOverload.afterDelegate.selector,
@@ -63,7 +63,7 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeRedelegate.selector)) {
-            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeRedelegate.selector, msg.sender, from, to, data), strict);
+            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeRedelegate.selector, msg.sender, from, to, data), strict);
         }
     }
 
@@ -75,7 +75,7 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterRedelegate.selector)) {
-            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.afterRedelegate.selector, msg.sender, from, to, data), strict);
+            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.afterRedelegate.selector, msg.sender, from, to, data), strict);
         }
     }
 
@@ -91,7 +91,7 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeUndelegating.selector)) {
-            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
+            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
         }
     }
 
@@ -104,7 +104,7 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegating.selector)) {
-            HooksLib.callHook(
+            HookCallLib.functionCallHook(
                 target,
                 abi.encodeWithSelector(
                     IHOverload.afterUndelegating.selector,
@@ -129,7 +129,7 @@ abstract contract COverload {
         bytes calldata data
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
-            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, data), false);
+            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, data), false);
         }
     }
 
@@ -139,7 +139,7 @@ abstract contract COverload {
         bytes calldata data
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegate.selector)) {
-            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, data), false);
+            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, data), false);
         }
     }
 }
