@@ -101,7 +101,7 @@ The balance increase or decreases based on the state transisions and on the amou
 | `undelegating` | `amount < max(d_0, ..., d_n)` | Do nothing |
 | `undelegating` | `amount == max(d_0, ..., d_n)` (Without delay) | Decrease bonded tokens |
 | `undelegating` | `amount < max(d_0, ..., d_n)` (Without delay) | Do nothing |
-| `undelegate` | `amount == max(d_0, ..., d_n)` | Decrease bonded tokens `max(d_0, ..., d_n)` excluding the current undelegated |
+| `undelegate` | `amount == max(d_0, ..., d_n)` | Decrease bonded tokens to `max(d_0, ..., d_n)` excluding the current undelegated |
 | `undelegate` | `amount < max(d_0, ..., d_n)` | Do nothing |
 
 ### Strict Mode
@@ -117,7 +117,7 @@ The main interface for Overload that users are expected to interact with are the
 | `undelegating` | Optional |
 | `undelegate` | Optional |
 
-The table above enables users to restake to any external contract without falling trap to risking malicious code. We will walk through the examples below of an example implementation that covers perspectives from both `Overload.sol` and and `Consensus.sol` (AVS) contract.
+The table above enables users to restake to any external contract and always be able to retain the ability to undelegate. We will walk through the examples below of an example implementation that covers perspectives from both `Overload.sol` and and `Consensus.sol` (AVS) contract.
 
 ### Hooks
 
