@@ -40,9 +40,11 @@ src/
 
 `Overload.sol` contract accounts for deposited tokens using the `ERC-6909.sol` standard. When ERC-20 tokens are deposited using the `deposit` function, balance is credited to the `owner` in the ERC-6909 `balanceOf` mapping.
 
+Hence, token address of type `address` will be casted to `uint256` and will take up `160 bits` of data. This also ensures every token id is unique and makes ERC-6909 fully compatible with ERC-20 for accounting the tokens internally in the contract.
+
 ### Restaking
 
-After depositing tokens into `Overload.sol`, it becomes possible to `delegate` any amount of `balanceOf` value, to any address. The delegation interface looks as follows
+After depositing tokens into `Overload.sol`, it becomes possible to `delegate` any amount of `balanceOf` value to any address. The delegation interface looks as follows
 
 ```solidity
 function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) external returns (bool);
@@ -78,6 +80,17 @@ and the three state transitions are strictly
 
 that can be called to move between all states.
 
+The exact possible state transistions are as follows.
+
+| State | Context | Transition/Function | Result |
+| :--- | :--- | :--- | :--- |
+| `Balance` | None | `delegate` | `Delegation` |
+| `Delegation` | None | `redelegate` | `Delegation` |
+| `Delegation` | Without undelegation delay | `undelegating` | `Balance` |
+| `Delegation` | With undelegation delay | `undelegating` | `Undelegation` |
+| `Undelegation` | Before undelegation delay has passed | `undelegate` | `REVERT` |
+| `Undelegation` | After undelegation delay has passed | `undelegate` | `Balance` |
+
 ### Strict Mode
 
 The main interface for Overload that users are expected to interact with are the six methods in the below.
@@ -110,8 +123,4 @@ When building a consensus contract inheriting `IHOverload.sol` fully, we expect 
 
 The gas budget pattern is important to prevent consensus contracts holding assets hostage. This way, a restaker will always be able to withdraw their assets regardless of external contract code, and a consensus contract can enforce correct behaviour as long as the gas used for code execution stays below `1_000_000` gas units.
 
-## Build
-
-```
-forge build
-```
+Hooks in Overload differ from e.g. Uniswap V4. Instead of having hook permissions included in the addresses, we instead utilize the commonly used ERC-165 standard instead. If a contract returns true for a hook method interface from `IHOverload.sol`, then `Overload.sol` will try to call the hook on the target contract.
