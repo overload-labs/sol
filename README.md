@@ -93,7 +93,16 @@ The exact possible state transistions are as follows.
 
 The balance increase or decreases based on the state transisions and on the amount being moved.
 
-| Transition/Function | Result |
+| Transition/Function | Context | Result |
+| :--- | :--- | :--- |
+| `delegate` | `amount > max(d_0, ..., d_n)` | Increase bonded tokens to `amount` |
+| `delegate` | `amount <= max(d_0, ..., d_n)` | Do nothing |
+| `undelegating` | `amount == max(d_0, ..., d_n)` | Do nothing |
+| `undelegating` | `amount < max(d_0, ..., d_n)` | Do nothing |
+| `undelegating` | `amount == max(d_0, ..., d_n)` (Without delay) | Decrease bonded tokens |
+| `undelegating` | `amount < max(d_0, ..., d_n)` (Without delay) | Do nothing |
+| `undelegate` | `amount == max(d_0, ..., d_n)` | Decrease bonded tokens `max(d_0, ..., d_n)` excluding the current undelegated |
+| `undelegate` | `amount < max(d_0, ..., d_n)` | Do nothing |
 
 ### Strict Mode
 
