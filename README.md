@@ -21,7 +21,6 @@ src/
 │  ├─ COverload.sol
 │  └─ Lock.sol
 ├─ interfaces/
-│  ├─ IERC6909.sol
 │  ├─ IHOverload.sol
 │  └─ IOverload.sol
 ├─ libraries/

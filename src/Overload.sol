@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 
 import {COverload} from "./abstracts/COverload.sol";
 import {Lock} from "./abstracts/Lock.sol";
@@ -14,7 +13,7 @@ import {DelegationLib, Delegation, DelegationKey} from "./libraries/types/Delega
 import {UndelegationLib, Undelegation, UndelegationKey} from "./libraries/types/Undelegation.sol";
 import {ERC6909} from "./tokens/ERC6909.sol";
 
-contract Overload is COverload, ERC6909, Lock {
+contract Overload is IOverload, COverload, ERC6909, Lock {
     using CastLib for uint256;
     using CastLib for int256;
     using TokenIdLib for uint256;
