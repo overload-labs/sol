@@ -67,16 +67,16 @@ struct DelegationKey {
 - `balanceOf`: The default token balance for any ERC-20 token, mirrored as ERC-6909 tokens. This token balance can be deposited/withdrawn from without any restrictions. They are identical to ERC-20 token balances.
 - `bonded`: When tokens are restaked using a `DelegationKey`, tokens will be locked according to `max(d_0, ..., d_n)`, where `d_i` is the delegation amount for a restaking instance.
 
-The states that restaked instances can takes on are 
+The types that restaked instances can takes on are 
 
 - `Delegation`
-- `Undelegating`
+- `Undelegation`
 
 and the three state transitions are strictly
 
 - `delegate`: Creates a restaking object and saves it into `delegations` mapping. Will increase bonding if and only if the restaked amount is greater than what's currently `bonded`.
 - `undelegating`: State transitions a restaked instance into `undelegations` mapping.
-- `undelegate`: After the `Undelegating` has finished the withdrawal delay, the restaked instance can be `undelegated` which deletes the restaked instance and possibly frees up `bonded` tokens into `balanceOf` (depends if there are other restaked instances, and what their values are).
+- `undelegate`: After the `Undelegation` has finished the withdrawal delay, the restaked instance can be `undelegated` which deletes the restaked instance and possibly frees up `bonded` tokens into `balanceOf` (depends if there are other restaked instances, and what their values are).
 
 that can be called to move between all states.
 
@@ -90,6 +90,10 @@ The exact possible state transistions are as follows.
 | `Delegation` | With undelegation delay | `undelegating` | `Undelegation` |
 | `Undelegation` | Before undelegation delay has passed | `undelegate` | `REVERT` |
 | `Undelegation` | After undelegation delay has passed | `undelegate` | `Balance` |
+
+The balance increase or decreases based on the state transisions and on the amount being moved.
+
+| Transition/Function | Result |
 
 ### Strict Mode
 
@@ -122,5 +126,7 @@ When building a consensus contract inheriting `IHOverload.sol` fully, we expect 
 | `beforeUndelegate`, `afterUndelegate` | No | The hook calls have a gas budget of `1_000_000`, otherwise undefined behaviour. |
 
 The gas budget pattern is important to prevent consensus contracts holding assets hostage. This way, a restaker will always be able to withdraw their assets regardless of external contract code, and a consensus contract can enforce correct behaviour as long as the gas used for code execution stays below `1_000_000` gas units.
+
+The `strict` variable prevents consensus contracts from `revert`:ing `undelegating` or `undelegate` calls, so that users will always be able to remove a restaking. The fixed gas budget on the other hand, is important to avoid an additonal `out-of-gas` attacks that consensus contract would otherwise be able to perform. A solution would be for the user to increase their gas limit very high, taking into account the `63 / 64` rule where a `1 / 63` out of the gas would be enough to fully complete the rest of the outer most function call. Relying on the `63 / 64` implies no limit on the gas budget but worse ergonomics; hence, `Overload.sol` instead employs a fixed gas budget that is within reason for the final implementation.
 
 Hooks in Overload differ from e.g. Uniswap V4. Instead of having hook permissions included in the addresses, we instead utilize the commonly used ERC-165 standard instead. If a contract returns true for a hook method interface from `IHOverload.sol`, then `Overload.sol` will try to call the hook on the target contract.
