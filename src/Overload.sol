@@ -5,15 +5,16 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 
-import {HOverload} from "./abstracts/HOverload.sol";
+import {COverload} from "./abstracts/COverload.sol";
 import {Lock} from "./abstracts/Lock.sol";
+import {IOverload} from "./interfaces/IOverload.sol";
 import {CastLib} from "./libraries/CastLib.sol";
 import {TokenIdLib} from "./libraries/TokenIdLib.sol";
-import {ERC6909} from "./tokens/ERC6909.sol";
 import {DelegationLib, Delegation, DelegationKey} from "./libraries/types/Delegation.sol";
 import {UndelegationLib, Undelegation, UndelegationKey} from "./libraries/types/Undelegation.sol";
+import {ERC6909} from "./tokens/ERC6909.sol";
 
-contract Overload is HOverload, ERC6909, Lock {
+contract Overload is COverload, ERC6909, Lock {
     using CastLib for uint256;
     using CastLib for int256;
     using TokenIdLib for uint256;

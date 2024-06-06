@@ -5,8 +5,6 @@ import {Delegation, DelegationKey} from "../libraries/types/Delegation.sol";
 import {Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol";
 
 interface IHOverload {
-    function permissions() external view returns (uint256);
-
     /*//////////////////////////////////////////////////////////////
                                 DELEGATE
     //////////////////////////////////////////////////////////////*/
