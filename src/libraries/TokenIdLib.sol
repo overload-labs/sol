@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
-library TokenId {
+library TokenIdLib {
     function convertToId(address token) internal pure returns (uint256 id) {
         id = uint256(uint160(token));
     }

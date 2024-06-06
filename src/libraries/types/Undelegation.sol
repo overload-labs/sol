@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Cast} from "../Cast.sol";
+import {CastLib} from "../CastLib.sol";
 
 struct Undelegation {
     address consensus;
@@ -34,7 +34,7 @@ library UndelegationLib {
 
         if (position_ >= 0) {
             index = position_;
-            delegation = map[key.owner][key.token][Cast.u256(index)];
+            delegation = map[key.owner][key.token][CastLib.u256(index)];
         } else {
             if (strict) {
                 revert("NOT_FOUND");

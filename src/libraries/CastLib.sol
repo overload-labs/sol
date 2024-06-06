@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-library Cast {
+library CastLib {
     function u256(int256 value) internal pure returns (uint256) {
         require(value >= 0, "U256_NEG");
         return uint256(value);

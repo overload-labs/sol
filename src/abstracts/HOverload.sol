@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {IOverloadHooks} from "../interfaces/IOverloadHooks.sol";
-import {Hooks} from "../libraries/Hooks.sol";
+import {IHOverload} from "../interfaces/IHOverload.sol";
+import {HooksLib} from "../libraries/HooksLib.sol";
 import {DelegationLib, Delegation, DelegationKey} from "../libraries/types/Delegation.sol";
 import {UndelegationLib, Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol";
 
-abstract contract OverloadHooks {
+abstract contract HOverload {
     /*//////////////////////////////////////////////////////////////
                                 DELEGATE
     //////////////////////////////////////////////////////////////*/
@@ -20,8 +20,8 @@ abstract contract OverloadHooks {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.beforeDelegate.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeDelegate.selector, msg.sender, key, delta, data), strict);
+        if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
+            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeDelegate.selector, msg.sender, key, delta, data), strict);
         }
     }
 
@@ -33,11 +33,11 @@ abstract contract OverloadHooks {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.afterDelegate.selector)) {
-            Hooks.callHook(
+        if (ERC165Checker.supportsInterface(target, IHOverload.afterDelegate.selector)) {
+            HooksLib.callHook(
                 target,
                 abi.encodeWithSelector(
-                    IOverloadHooks.afterDelegate.selector,
+                    IHOverload.afterDelegate.selector,
                     msg.sender,
                     key,
                     delta,
@@ -60,8 +60,8 @@ abstract contract OverloadHooks {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.beforeRedelegate.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeRedelegate.selector, msg.sender, from, to, data), strict);
+        if (ERC165Checker.supportsInterface(target, IHOverload.beforeRedelegate.selector)) {
+            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeRedelegate.selector, msg.sender, from, to, data), strict);
         }
     }
 
@@ -72,8 +72,8 @@ abstract contract OverloadHooks {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.afterRedelegate.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.afterRedelegate.selector, msg.sender, from, to, data), strict);
+        if (ERC165Checker.supportsInterface(target, IHOverload.afterRedelegate.selector)) {
+            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.afterRedelegate.selector, msg.sender, from, to, data), strict);
         }
     }
 
@@ -88,8 +88,8 @@ abstract contract OverloadHooks {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.beforeUndelegating.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
+        if (ERC165Checker.supportsInterface(target, IHOverload.beforeUndelegating.selector)) {
+            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
         }
     }
 
@@ -101,11 +101,11 @@ abstract contract OverloadHooks {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.afterUndelegating.selector)) {
-            Hooks.callHook(
+        if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegating.selector)) {
+            HooksLib.callHook(
                 target,
                 abi.encodeWithSelector(
-                    IOverloadHooks.afterUndelegating.selector,
+                    IHOverload.afterUndelegating.selector,
                     msg.sender,
                     key,
                     delta,
@@ -126,8 +126,8 @@ abstract contract OverloadHooks {
         UndelegationKey memory key,
         bytes calldata data
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.beforeDelegate.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.beforeUndelegate.selector, msg.sender, key, data), false);
+        if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
+            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, data), false);
         }
     }
 
@@ -136,8 +136,8 @@ abstract contract OverloadHooks {
         UndelegationKey memory key,
         bytes calldata data
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IOverloadHooks.afterUndelegate.selector)) {
-            Hooks.callHook(target, abi.encodeWithSelector(IOverloadHooks.afterUndelegate.selector, msg.sender, key, data), false);
+        if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegate.selector)) {
+            HooksLib.callHook(target, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, data), false);
         }
     }
 }

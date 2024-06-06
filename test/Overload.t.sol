@@ -1,17 +1,17 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
-import {TokenId} from "../src/libraries/TokenId.sol";
+import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
 import {ERC20Fee} from "./mocks/ERC20Fee.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 
 contract OverloadTest is Test {
-    using TokenId for uint256;
-    using TokenId for address;
+    using TokenIdLib for uint256;
+    using TokenIdLib for address;
 
     event Deposit(address indexed caller, address indexed owner, address indexed token, uint256 amount);
     event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);

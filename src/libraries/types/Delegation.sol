@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Cast} from "../Cast.sol";
+import {CastLib} from "../CastLib.sol";
 
 /// @dev `Delegation` objects are unique. There cannot be duplicates inside the mapping.
 struct Delegation {
@@ -32,7 +32,7 @@ library DelegationLib {
 
         if (position_ >= 0) {
             index = position_;
-            delegation = map[key.owner][key.token][Cast.u256(index)];
+            delegation = map[key.owner][key.token][CastLib.u256(index)];
         } else {
             if (strict) {
                 revert("Delegation.get: NOT_FOUND");

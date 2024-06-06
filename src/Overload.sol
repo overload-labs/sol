@@ -5,21 +5,19 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 
-import {OverloadHooks} from "./abstracts/OverloadHooks.sol";
-import {IOverloadHooks} from "./interfaces/IOverloadHooks.sol";
-import {Cast} from "./libraries/Cast.sol";
-import {Hooks} from "./libraries/Hooks.sol";
-import {Lock} from "./libraries/Lock.sol";
-import {TokenId} from "./libraries/TokenId.sol";
+import {HOverload} from "./abstracts/HOverload.sol";
+import {Lock} from "./abstracts/Lock.sol";
+import {CastLib} from "./libraries/CastLib.sol";
+import {TokenIdLib} from "./libraries/TokenIdLib.sol";
 import {ERC6909} from "./tokens/ERC6909.sol";
 import {DelegationLib, Delegation, DelegationKey} from "./libraries/types/Delegation.sol";
 import {UndelegationLib, Undelegation, UndelegationKey} from "./libraries/types/Undelegation.sol";
 
-contract Overload is OverloadHooks, ERC6909, Lock {
-    using Cast for uint256;
-    using Cast for int256;
-    using TokenId for uint256;
-    using TokenId for address;
+contract Overload is HOverload, ERC6909, Lock {
+    using CastLib for uint256;
+    using CastLib for int256;
+    using TokenIdLib for uint256;
+    using TokenIdLib for address;
 
     using DelegationLib for mapping(address owner => mapping(address token => Delegation[]));
     using UndelegationLib for mapping(address owner => mapping(address token => Undelegation[]));

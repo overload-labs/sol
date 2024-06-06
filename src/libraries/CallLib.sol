@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-library Call {
-    function isContract(address target) internal view returns (bool) {
-        return target.code.length > 0;
-    }
-
+library CallLib {
     function functionCall(address target, bytes memory data, bool strict) internal returns (bool, bytes memory) {
         if (target.code.length == 0) {
             return (false, "");
