@@ -34,7 +34,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     event Redelegate(DelegationKey indexed from, DelegationKey indexed to, bytes data);
     event Undelegating(DelegationKey indexed key, uint256 delta, bytes data);
     event Undelegate(UndelegationKey indexed key, int256 position, bytes data);
-    event Jail(address indexed consensus, address indexed validator, uint256 timestamp);
+    event Jail(address indexed consensus, address indexed validator, uint256 jailtime, uint256 timestamp);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERRORS                           */
@@ -307,8 +307,9 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
 
         if (jailtime > 0) {
             jailed[msg.sender][validator] = block.timestamp + jailtime;
-            emit Jail(msg.sender, validator, block.timestamp + jailtime);
         }
+
+        emit Jail(msg.sender, validator, jailtime, block.timestamp + jailtime);
 
         return true;
     }
