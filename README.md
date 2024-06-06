@@ -80,12 +80,12 @@ The main interface for Overload that users are expected to interact with are the
 
 | Method | Strict Mode |
 | :--- | :--- |
-| deposit | None |
-| withdraw | None |
-| delegate | Optional, but expected to be true |
-| redelegate | Yes |
-| undelegating | Optional |
-| undelegate | Optional |
+| `deposit` | None |
+| `withdraw` | None |
+| `delegate` | Optional, but expected to be `true` by consensus contracts |
+| `redelegate` | Yes |
+| `undelegating` | Optional |
+| `undelegate` | Optional |
 
 The table above enables users to restake to any external contract without falling trap to risking malicious code. We will walk through the examples below of an example implementation that covers perspectives from both `Overload.sol` and and `Consensus.sol` (AVS) contract.
 
