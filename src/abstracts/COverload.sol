@@ -17,18 +17,20 @@ abstract contract COverload {
 
     function _beforeDelegateHook(
         address target,
+        uint256 gas,
         DelegationKey memory key,
         uint256 delta,
         bytes calldata data,
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
-            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeDelegate.selector, msg.sender, key, delta, data), strict);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeDelegate.selector, msg.sender, key, delta, data), strict);
         }
     }
 
     function _afterDelegateHook(
         address target,
+        uint256 gas,
         DelegationKey memory key,
         uint256 delta,
         Delegation memory delegation,
@@ -38,6 +40,7 @@ abstract contract COverload {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterDelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
+                gas,
                 abi.encodeWithSelector(
                     IHOverload.afterDelegate.selector,
                     msg.sender,
@@ -57,25 +60,27 @@ abstract contract COverload {
 
     function _beforeRedelegateHook(
         address target,
+        uint256 gas,
         DelegationKey memory from,
         DelegationKey memory to,
         bytes calldata data,
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeRedelegate.selector)) {
-            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeRedelegate.selector, msg.sender, from, to, data), strict);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeRedelegate.selector, msg.sender, from, to, data), strict);
         }
     }
 
     function _afterRedelegateHook(
         address target,
+        uint256 gas,
         DelegationKey memory from,
         DelegationKey memory to,
         bytes calldata data,
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterRedelegate.selector)) {
-            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.afterRedelegate.selector, msg.sender, from, to, data), strict);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.afterRedelegate.selector, msg.sender, from, to, data), strict);
         }
     }
 
@@ -85,18 +90,20 @@ abstract contract COverload {
 
     function _beforeUndelegatingHook(
         address target,
+        uint256 gas,
         DelegationKey memory key,
         uint256 delta,
         bytes calldata data,
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeUndelegating.selector)) {
-            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
         }
     }
 
     function _afterUndelegatingHook(
         address target,
+        uint256 gas,
         DelegationKey memory key,
         uint256 delta,
         Delegation memory delegation,
@@ -106,6 +113,7 @@ abstract contract COverload {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegating.selector)) {
             HookCallLib.functionCallHook(
                 target,
+                gas,
                 abi.encodeWithSelector(
                     IHOverload.afterUndelegating.selector,
                     msg.sender,
@@ -125,21 +133,23 @@ abstract contract COverload {
 
     function _beforeUndelegateHook(
         address target,
+        uint256 gas,
         UndelegationKey memory key,
         bytes calldata data
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
-            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, data), false);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, data), false);
         }
     }
 
     function _afterUndelegateHook(
         address target,
+        uint256 gas,
         UndelegationKey memory key,
         bytes calldata data
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegate.selector)) {
-            HookCallLib.functionCallHook(target, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, data), false);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, data), false);
         }
     }
 }

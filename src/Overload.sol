@@ -63,6 +63,10 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     // Variables
+    /// @notice The gas budget that a hook call has.
+    /// @dev A hook not consuming withing the budget can lead to unexpected behaviours on the consensus contracts. It's
+    ///     important that the implemented hooks stay within good margin of the gas budget.
+    uint256 public gasBudget = 1_000_000;
     uint256 public maxDelegations = 256;
     uint256 public maxUndelegations = 32;
     uint256 public maxUndelegatingDelay = 604_800; // 7 days
@@ -144,7 +148,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         require(delegations[key.owner][key.token].length < maxDelegations, MaxDelegationsReached());
 
         // Before hook call
-        _beforeDelegateHook(key.consensus, key, delta, data, strict);
+        _beforeDelegateHook(key.consensus, gasBudget, key, delta, data, strict);
 
         uint256 balance = balanceOf[key.owner][key.token.convertToId()] + bonded[key.owner][key.token];
 
@@ -171,7 +175,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         }
 
         // After nhook call
-        _afterDelegateHook(key.consensus, key, delta, delegation, data, strict);
+        _afterDelegateHook(key.consensus, gasBudget, key, delta, delegation, data, strict);
 
         emit Delegate(key, delta, data, strict);
 
@@ -191,11 +195,11 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         (, int256 index) = delegations.get(from, true);
         require(index >= 0, NotFound());
 
-        _beforeRedelegateHook(from.consensus, from, to, data, true);
+        _beforeRedelegateHook(from.consensus, gasBudget, from, to, data, true);
 
         delegations[from.owner][from.token][index.u256()].validator = to.validator;
 
-        _afterRedelegateHook(from.consensus, from, to, data, true);
+        _afterRedelegateHook(from.consensus, gasBudget, from, to, data, true);
 
         emit Redelegate(from, to, data);
 
@@ -226,7 +230,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         require(jailed[key.consensus][key.validator] <= block.timestamp, Jailed());
 
         // Non-strict hook call
-        _beforeUndelegatingHook(key.consensus, key, delta, data, strict);
+        _beforeUndelegatingHook(key.consensus, gasBudget, key, delta, data, strict);
 
         // Update the delegation
         if (delta == delegation.amount) {
@@ -256,7 +260,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         }
 
         // Non-strict hook call
-        _afterUndelegatingHook(key.consensus, key, delta, delegation, data, strict);
+        _afterUndelegatingHook(key.consensus, gasBudget, key, delta, delegation, data, strict);
 
         emit Undelegating(key, delta, data);
 
@@ -283,13 +287,13 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         require(index >= 0, Fatal());
 
         // Non-strict hook call
-        _beforeUndelegateHook(key.consensus, key, data);
+        _beforeUndelegateHook(key.consensus, gasBudget, key, data);
 
         undelegations.remove(key, index.u256());
         _bondUpdate(key.owner, key.token);
 
         // Non-strict hook call
-        _afterUndelegateHook(key.consensus, key, data);
+        _afterUndelegateHook(key.consensus, gasBudget, key, data);
 
         emit Undelegate(key, position, data);
 
