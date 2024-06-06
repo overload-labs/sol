@@ -104,7 +104,7 @@ The main interface for Overload that users are expected to interact with are the
 | `deposit` | None |
 | `withdraw` | None |
 | `delegate` | Optional, but expected to be `true` by consensus contracts |
-| `redelegate` | Yes |
+| `redelegate` | Optional |
 | `undelegating` | Optional |
 | `undelegate` | Optional |
 
