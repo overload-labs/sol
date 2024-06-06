@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.8.26;
 
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -38,11 +38,35 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     event Jail(address indexed consensus, address indexed validator, uint256 timestamp);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           ERRORS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    // General errors
+    error Unauthorized();
+    error MismatchAddress(address a, address b);
+    error MismatchUint256(uint256 a, uint256 b);
+    error NotFound();
+    error Overflow();
+    error Fatal();
+    error Zero();
+
+    // Specific errors
+    error ValueExceedsLimit();
+    error ValueExceedsMaxDelay();
+    error ValueExceedsMaxJailtime();
+    error MaxDelegationsReached();
+    error MaxUndelegationsReached();
+    error IncompleteUndelegation();
+    error IncompleteJailCooldown();
+    error Jailed();
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     // Variables
     uint256 public maxDelegations = 256;
+    uint256 public maxUndelegations = 32;
     uint256 public maxUndelegatingDelay = 604_800; // 7 days
     uint256 public maxJailTime = 604_800; // 7 days
     uint256 public minJailCooldown = 86_400; // 1 day
@@ -62,8 +86,8 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function setUndelegatingDelay(address consensus, uint256 delay) public lock returns (bool) {
-        require(msg.sender == consensus || isOperator[consensus][msg.sender], "UNAUTHORIZED");
-        require(delay <= maxUndelegatingDelay, "COOLDOWN_TOO_HIGH");
+        require(msg.sender == consensus || isOperator[consensus][msg.sender], Unauthorized());
+        require(delay <= maxUndelegatingDelay, ValueExceedsMaxDelay());
 
         undelegatingDelay[consensus] = delay;
 
@@ -118,9 +142,10 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
                 allowance[key.owner][msg.sender][key.token.convertToId()] = allowed - delta;
             }
         }
+        // Check below max delegations amount
+        require(delegations[key.owner][key.token].length < maxDelegations, MaxDelegationsReached());
 
-        require(delegations[key.owner][key.token].length <= maxDelegations, "MAX_DELEGATIONS");
-
+        // Before hook call
         _beforeDelegateHook(key.consensus, key, delta, data, strict);
 
         uint256 balance = balanceOf[key.owner][key.token.convertToId()] + bonded[key.owner][key.token];
@@ -131,13 +156,13 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
 
             // Get delegation
             (delegation, index) = delegations.get(key, true);
-            require((delegation.amount + delta) <= balance, "OVERFLOW_SUM");
+            require((delegation.amount + delta) <= balance, Overflow());
 
             // Increase delegation amount
             _bondTokens(key.owner, key.token, delegation.amount + delta);
             delegation = delegations.increase(key.owner, key.token, index.u256(), delta);
         } else {
-            require(delta <= balance, "OVERFLOW_NEW");
+            require(delta <= balance, Overflow());
 
             // Create delegation
             _bondTokens(key.owner, key.token, delta);
@@ -147,6 +172,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
             delegated[key.owner][key.token][key.consensus] = true;
         }
 
+        // After nhook call
         _afterDelegateHook(key.consensus, key, delta, delegation, data, strict);
 
         emit Delegate(key, delta, data, strict);
@@ -159,13 +185,13 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         DelegationKey memory to,
         bytes calldata data
     ) public lock returns (bool) {
-        require(from.owner == to.owner, "MISMATCH_OWNER");
-        require(from.token == to.token, "MISMATCH_TOKEN");
-        require(from.consensus == to.consensus, "MISMATCH_CONSENSUS");
-        require(msg.sender == to.owner || !isOperator[to.owner][msg.sender], "NOT_ALLOWED");
+        require(from.owner == to.owner, MismatchAddress(from.owner, to.owner));
+        require(from.token == to.token, MismatchAddress(from.token, to.token));
+        require(from.consensus == to.consensus, MismatchAddress(from.consensus, to.consensus));
+        require(msg.sender == to.owner || !isOperator[to.owner][msg.sender], Unauthorized());
     
         (, int256 index) = delegations.get(from, true);
-        require(index >= 0, "NOT_FOUND");
+        require(index >= 0, NotFound());
 
         _beforeRedelegateHook(from.consensus, from, to, data, true);
 
@@ -186,20 +212,20 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         bool strict
     ) public lock returns (bool, UndelegationKey memory undelegationKey) {
         // Check parameters
-        require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
-        require(delta > 0);
-        require(delegated[key.owner][key.token][key.consensus], "NO_DELEGATION");
-        require(undelegations[key.owner][key.token].length <= 32, "MAX_LENGTH");
+        require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
+        require(delta > 0, Zero());
+        require(delegated[key.owner][key.token][key.consensus], NotFound());
+        require(undelegations[key.owner][key.token].length <= maxUndelegations, MaxUndelegationsReached());
 
         // Check parameters against the read delegation object
         (Delegation memory delegation, int256 index) = delegations.get(key, true);
-        require(key.consensus == delegation.consensus, "MISMATCH_CONSENSUS");
-        require(key.validator == delegation.validator, "MISMATCH_VALIDATOR");
-        require(delta <= delegation.amount, "OVERFLOW");
-        require(index >= 0, "FATAL");
+        require(key.consensus == delegation.consensus, MismatchAddress(key.consensus, delegation.consensus));
+        require(key.validator == delegation.validator, MismatchAddress(key.validator, delegation.validator));
+        require(delta <= delegation.amount, Overflow());
+        require(index >= 0, Fatal());
 
         // Check validator is not jailed
-        require(jailed[key.consensus][key.validator] <= block.timestamp, "JAILED");
+        require(jailed[key.consensus][key.validator] <= block.timestamp, Jailed());
 
         // Non-strict hook call
         _beforeUndelegatingHook(key.consensus, key, delta, data, strict);
@@ -240,7 +266,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     }
 
     function undelegate(UndelegationKey memory key, int256 position, bytes calldata data) public lock returns (bool) {
-        require(msg.sender == key.owner || isOperator[key.owner][msg.sender]);
+        require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
 
         Undelegation memory undelegation;
         int256 index;
@@ -252,11 +278,11 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
             (undelegation, index) = undelegations.get(key, true);
         }
 
-        require(key.consensus == undelegation.consensus);
-        require(key.validator == undelegation.validator);
-        require(key.amount == undelegation.amount);
-        require(undelegation.completion <= block.timestamp, "NOT_COMPLETE");
-        require(index >= 0, "FATAL");
+        require(key.consensus == undelegation.consensus, MismatchAddress(key.consensus, undelegation.consensus));
+        require(key.validator == undelegation.validator, MismatchAddress(key.validator, undelegation.validator));
+        require(key.amount == undelegation.amount, MismatchUint256(key.amount, undelegation.amount));
+        require(undelegation.completion <= block.timestamp, IncompleteUndelegation());
+        require(index >= 0, Fatal());
 
         // Non-strict hook call
         _beforeUndelegateHook(key.consensus, key, data);
@@ -277,8 +303,9 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function jail(address validator, uint256 jailtime) public lock returns (bool) {
-        require(jailed[msg.sender][validator] + minJailCooldown <= block.timestamp);
-        require(jailtime <= maxJailTime);
+        // A validator cannot be continously jailed, a minimum cooldown is required.
+        require(jailed[msg.sender][validator] + minJailCooldown <= block.timestamp, IncompleteJailCooldown());
+        require(jailtime <= maxJailTime, ValueExceedsMaxJailtime());
 
         if (jailtime > 0) {
             jailed[msg.sender][validator] = block.timestamp + jailtime;

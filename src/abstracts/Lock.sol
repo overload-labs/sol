@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.8.26;
 
 abstract contract Lock {
     error Locked();
@@ -7,10 +7,7 @@ abstract contract Lock {
     bool public __locked = false;
 
     modifier lock() {
-        if (__locked) {
-            revert Locked();
-        }
-
+        require(!__locked, Locked());
         __locked = true;
         _;
         __locked = false;
