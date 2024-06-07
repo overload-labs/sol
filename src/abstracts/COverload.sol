@@ -135,10 +135,11 @@ abstract contract COverload {
         address target,
         uint256 gas,
         UndelegationKey memory key,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, data), false);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, data), strict);
         }
     }
 
@@ -146,10 +147,11 @@ abstract contract COverload {
         address target,
         uint256 gas,
         UndelegationKey memory key,
-        bytes calldata data
+        bytes calldata data,
+        bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegate.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, data), false);
+            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, data), strict);
         }
     }
 }

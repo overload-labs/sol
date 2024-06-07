@@ -31,9 +31,9 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     event Deposit(address indexed caller, address indexed owner, address indexed token, uint256 amount);
     event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);
     event Delegate(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
-    event Redelegate(DelegationKey indexed from, DelegationKey indexed to, bytes data);
+    event Redelegate(DelegationKey indexed from, DelegationKey indexed to, bytes data, bool strict);
     event Undelegating(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
-    event Undelegate(UndelegationKey indexed key, int256 position, bytes data);
+    event Undelegate(UndelegationKey indexed key, int256 position, bytes data, bool strict);
     event Jail(address indexed consensus, address indexed validator, uint256 jailtime, uint256 timestamp);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -240,7 +240,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
 
         _afterRedelegateHook(from.consensus, gasBudget, from, to, data, strict);
 
-        emit Redelegate(from, to, data);
+        emit Redelegate(from, to, data, strict);
 
         return true;
     }
@@ -306,7 +306,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         return (true, undelegationKey, insertIndex);
     }
 
-    function undelegate(UndelegationKey memory key, int256 position, bytes calldata data) public lock returns (bool) {
+    function undelegate(UndelegationKey memory key, int256 position, bytes calldata data, bool strict) public lock returns (bool) {
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
 
         Undelegation memory undelegation;
@@ -326,15 +326,15 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         require(index >= 0, Fatal());
 
         // Non-strict hook call
-        _beforeUndelegateHook(key.consensus, gasBudget, key, data);
+        _beforeUndelegateHook(key.consensus, gasBudget, key, data, strict);
 
         undelegations.remove(key, index.u256());
         _bondUpdate(key.owner, key.token);
 
         // Non-strict hook call
-        _afterUndelegateHook(key.consensus, gasBudget, key, data);
+        _afterUndelegateHook(key.consensus, gasBudget, key, data, strict);
 
-        emit Undelegate(key, position, data);
+        emit Undelegate(key, position, data, strict);
 
         return true;
     }

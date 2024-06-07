@@ -11,6 +11,6 @@ interface IOverload {
     function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) external returns (bool);
     function redelegate(DelegationKey memory from, DelegationKey memory to, bytes calldata data, bool strict) external returns (bool);
     function undelegating(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) external returns (bool, UndelegationKey memory, uint256);
-    function undelegate(UndelegationKey memory key, int256 position, bytes calldata data) external returns (bool);
+    function undelegate(UndelegationKey memory key, int256 position, bytes calldata data, bool strict) external returns (bool);
     function jail(address validator, uint256 jailtime) external returns (bool);
 }
