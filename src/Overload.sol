@@ -56,6 +56,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     error MaxUndelegationsReached();
     error IncompleteUndelegation();
     error IncompleteJailCooldown();
+    error NotDelegated();
     error Jailed();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -238,7 +239,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         // Check parameters
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
         require(delta > 0, Zero());
-        require(delegated[key.owner][key.token][key.consensus], NotFound());
+        require(delegated[key.owner][key.token][key.consensus], NotDelegated());
         require(undelegations[key.owner][key.token].length < maxUndelegations, MaxUndelegationsReached());
 
         // Strictly get delegation and check parameters against it
