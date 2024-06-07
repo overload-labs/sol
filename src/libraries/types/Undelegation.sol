@@ -8,7 +8,7 @@ struct Undelegation {
     address validator;
     uint256 amount;
 
-    uint256 completion; // a unix timestamp in seconds
+    uint256 maturity; // a unix timestamp in seconds
 }
 
 struct UndelegationKey {
@@ -17,7 +17,7 @@ struct UndelegationKey {
     address consensus;
     address validator;
     uint256 amount;
-    uint256 completion;
+    uint256 maturity;
 }
 
 library UndelegationLib {
@@ -45,7 +45,7 @@ library UndelegationLib {
         }
     }
 
-    /// @dev Undelegations are not unique, even with completion timestamp are included. Although, this is fine as two
+    /// @dev Undelegations are not unique, even with maturity timestamp are included. Although, this is fine as two
     ///     identital keys are effectively also imply objects being identical. Hence, fetching for an object with a key will
     ///     return the first match.
     function position(
@@ -59,7 +59,7 @@ library UndelegationLib {
                 key.consensus == undelegation.consensus &&
                 key.validator == undelegation.validator &&
                 key.amount == undelegation.amount &&
-                key.completion == undelegation.completion
+                key.maturity == undelegation.maturity
             ) {
                 return int256(i);
             }
@@ -73,7 +73,7 @@ library UndelegationLib {
             consensus: address(0),
             validator: address(0),
             amount: 0,
-            completion: 0
+            maturity: 0
         });
     }
 
@@ -84,7 +84,7 @@ library UndelegationLib {
             consensus: address(0),
             validator: address(0),
             amount: 0,
-            completion: 0
+            maturity: 0
         });
     }
 
@@ -101,7 +101,7 @@ library UndelegationLib {
             consensus: key.consensus,
             validator: key.validator,
             amount: key.amount,
-            completion: key.completion
+            maturity: key.maturity
         }));
     }
 
@@ -116,7 +116,7 @@ library UndelegationLib {
         require(removed.consensus == removed.consensus);
         require(removed.validator == removed.validator);
         require(removed.amount == removed.amount);
-        require(removed.completion == removed.completion);
+        require(removed.maturity == removed.maturity);
 
         undelegations[index] = undelegations[undelegations.length - 1];
         undelegations.pop();

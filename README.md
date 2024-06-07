@@ -161,7 +161,7 @@ The `strict` variable prevents consensus contracts from `revert`:ing `undelegati
 
 Hooks in Overload differ from e.g. Uniswap V4. Instead of having hook permissions included in the addresses, we instead utilize the commonly used ERC-165 standard instead. If a contract returns true for a hook method interface from `IHOverload.sol`, then `Overload.sol` will try to call the hook on the target contract.
 
-### Coverage
+## Coverage
 
 ```sh
 forge coverage --ir-minimum

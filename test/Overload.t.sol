@@ -79,7 +79,7 @@ contract OverloadTest is Test {
         overload.delegate(key, amount, "", strict);
     }
 
-    function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory ukey, uint256) {
+    function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, uint256) {
         DelegationKey memory key = DelegationKey({
             owner: user,
             token: address(token),
@@ -91,7 +91,7 @@ contract OverloadTest is Test {
         return overload.undelegating(key, amount, "", strict);
     }
 
-    function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory ukey, uint256) {
+    function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, uint256) {
         DelegationKey memory key = DelegationKey({
             owner: user,
             token: address(token_),
@@ -101,6 +101,11 @@ contract OverloadTest is Test {
 
         vm.prank(user);
         return overload.undelegating(key, amount, "", strict);
+    }
+
+    function undelegate(address user, UndelegationKey memory ukey, int256 position, bytes memory data, bool strict) public {
+        vm.prank(user);
+        overload.undelegate(ukey, position, data, strict);
     }
 
     function setUndelegatingDelay(address consensus, uint256 delay) public {
@@ -423,7 +428,7 @@ contract OverloadTest is Test {
         assertEq(ukey.consensus, address(0));
         assertEq(ukey.validator, address(0));
         assertEq(ukey.amount, 0);
-        assertEq(ukey.completion, 0);
+        assertEq(ukey.maturity, 0);
 
         assertTrue(overload.delegated(address(0xBEEF), address(token), address(0xCCCC)));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
@@ -467,7 +472,7 @@ contract OverloadTest is Test {
         assertEq(ukey.consensus, address(0xCCCC));
         assertEq(ukey.validator, address(0xFFFF));
         assertEq(ukey.amount, 25);
-        assertEq(ukey.completion, 501);
+        assertEq(ukey.maturity, 501);
 
         assertTrue(overload.delegated(address(0xBEEF), address(token), address(0xCCCC)));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
@@ -623,5 +628,32 @@ contract OverloadTest is Test {
 
         vm.expectRevert(Overload.MaxUndelegationsReached.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 10, true);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                               UNDELEGATE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_undelegate() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        (, UndelegationKey memory ukey, uint256 index) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        vm.warp(501);
+        undelegate(address(0xBEEF), ukey, int256(index), "", true);
+    }
+
+    function test_undelegate_noIndex() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        (, UndelegationKey memory ukey, ) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        vm.warp(501);
+        undelegate(address(0xBEEF), ukey, int256(-1), "", true);
+    }
+
+    function test_fail_undelegate_incompleteCompletion() public {
     }
 }

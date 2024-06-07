@@ -54,8 +54,8 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     error ValueExceedsMaxJailtime();
     error MaxDelegationsReached();
     error MaxUndelegationsReached();
-    error IncompleteUndelegation();
-    error IncompleteJailCooldown();
+    error NonMatureUndelegation();
+    error JailOnCooldown();
     error NotDelegated();
     error Jailed();
 
@@ -88,12 +88,12 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*                           VIEWS                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function getDelegations(address owner, address token) public view returns (Delegation[] memory) {
-        return delegations[owner][token];
-    }
-
     function getDelegationsLength(address owner, address token) public view returns (uint256) {
         return delegations[owner][token].length;
+    }
+
+    function getDelegations(address owner, address token) public view returns (Delegation[] memory) {
+        return delegations[owner][token];
     }
 
     function getDelegation(address owner, address token, uint256 index) public view returns (Delegation memory) {
@@ -110,6 +110,10 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
 
     function getUndelegationLength(address owner, address token) public view returns (uint256) {
         return undelegations[owner][token].length;
+    }
+
+    function getUndelegations(address owner, address token) public view returns (Undelegation[] memory) {
+        return undelegations[owner][token];
     }
 
     function getUndelegation(address owner, address token, uint256 index) public view returns (Undelegation memory) {
@@ -288,7 +292,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
                 consensus: key.consensus,
                 validator: key.validator,
                 amount: delta,
-                completion: block.timestamp + undelegatingDelay[key.consensus]
+                maturity: block.timestamp + undelegatingDelay[key.consensus]
             });
             insertIndex = undelegations.add(undelegationKey);
         } else {
@@ -318,11 +322,10 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         } else {
             (undelegation, index) = undelegations.get(key, true);
         }
-
         require(key.consensus == undelegation.consensus, MismatchAddress(key.consensus, undelegation.consensus));
         require(key.validator == undelegation.validator, MismatchAddress(key.validator, undelegation.validator));
         require(key.amount == undelegation.amount, MismatchUint256(key.amount, undelegation.amount));
-        require(undelegation.completion <= block.timestamp, IncompleteUndelegation());
+        require(undelegation.maturity <= block.timestamp, NonMatureUndelegation());
         require(index >= 0, Fatal());
 
         // Non-strict hook call
@@ -345,7 +348,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
 
     function jail(address validator, uint256 jailtime) public lock returns (bool) {
         // A validator cannot be continously jailed, a minimum cooldown is required.
-        require(jailed[msg.sender][validator] + minJailCooldown <= block.timestamp, IncompleteJailCooldown());
+        require(jailed[msg.sender][validator] + minJailCooldown <= block.timestamp, JailOnCooldown());
         require(jailtime <= maxJailTime, ValueExceedsMaxJailtime());
 
         if (jailtime > 0) {
