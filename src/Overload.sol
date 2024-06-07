@@ -355,6 +355,9 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*                            JAIL                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @dev When `block.timestamp` is below `minJailCooldown`, then the `jail` function will stop working. We do not
+    ///     expect the `block.timestamp` to be of such value although, the timestamp should always strictly be higher
+    ///     than `minJailCooldown` - otherwise a blockchain has been configured wrongly, or it's a testchain.
     function jail(address validator, uint256 jailtime) public lock returns (bool) {
         // A validator cannot be continously jailed, a minimum cooldown is required.
         require(jailed[msg.sender][validator] + minJailCooldown <= block.timestamp, JailOnCooldown());

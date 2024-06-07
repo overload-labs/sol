@@ -825,4 +825,95 @@ contract OverloadTest is Test {
         vm.expectRevert(UndelegationNotFound.selector);
         undelegate(address(0xBEEF), ukey, int256(-1), "", true);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                  JAIL
+    //////////////////////////////////////////////////////////////*/
+
+    function test_jail() public {
+        // Need to increase this as contract does not take low default `block.timestamp` into account
+        vm.warp(1_000_000);
+
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        vm.prank(address(0xCCCC));
+        vm.expectEmit(true, true, true, true);
+        emit Overload.Jail(address(0xCCCC), address(0xFFFF), 1 hours, block.timestamp + 1 hours);
+        overload.jail(address(0xFFFF), 1 hours);
+        vm.expectRevert(Overload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        // After jailtime passed
+        vm.warp(1_000_000 + 1 hours - 1);
+        vm.expectRevert(Overload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        vm.warp(1_000_000 + 1 hours);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+    }
+
+    function test_jail_otherValidatorsFine() public {
+        vm.warp(1_000_000);
+
+        // Delegate
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0x1234), 100, true);
+
+        // Jail
+        vm.prank(address(0xCCCC));
+        overload.jail(address(0xFFFF), 0);
+
+        // Try undelegating successfully
+        undelegating(address(0xBEEF), address(0xCCCC), address(0x1234), 100, true);
+    }
+    
+    function test_jail_zero() public {
+        vm.warp(1_000_000);
+
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        // Jail zero
+        vm.prank(address(0xCCCC));
+        overload.jail(address(0xFFFF), 0);
+
+        // Try undelegating successfully
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+    }
+
+    function test_fail_jail_valueExceedsMaxJailtime() public {
+        vm.warp(1_000_000);
+
+        vm.prank(address(0xCCCC));
+        vm.expectRevert(Overload.ValueExceedsMaxJailtime.selector);
+        overload.jail(address(0xFFFF), 7 days + 1);
+    }
+
+    function test_fail_jail_jailOnCooldown() public {
+        // Need to increase this as contract does not take low default `block.timestamp` into account
+        vm.warp(1_000_000);
+
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        vm.prank(address(0xCCCC));
+        overload.jail(address(0xFFFF), 1 hours);
+        vm.expectRevert(Overload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        // After jailtime passed
+        vm.warp(block.timestamp + 1 hours - 1);
+        vm.expectRevert(Overload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        vm.warp(block.timestamp + 1 hours);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        // Jail should fail as it's on cooldown
+        vm.prank(address(0xCCCC));
+        vm.expectRevert(Overload.JailOnCooldown.selector);
+        overload.jail(address(0xFFFF), 1 hours);
+
+        vm.warp(block.timestamp + 23 hours);
+        overload.jail(address(0xFFFF), 1 hours);
+    }
 }
