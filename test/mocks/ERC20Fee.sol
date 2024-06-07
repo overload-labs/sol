@@ -13,7 +13,7 @@ contract Math {
     }
 }
 
-contract ERC20 is Math {
+contract ERC20_ is Math {
     // --- ERC20 Data ---
     string  public constant name = "Token";
     string  public constant symbol = "TKN";
@@ -55,14 +55,16 @@ contract ERC20 is Math {
     }
 }
 
-contract ERC20Fee is ERC20 {
+contract ERC20Fee is ERC20_ {
 
     uint immutable fee;
 
     // --- Init ---
-    constructor(uint _totalSupply, uint _fee) ERC20(_totalSupply) {
+    constructor(uint _totalSupply, uint _fee) ERC20_(_totalSupply) {
         fee = _fee;
     }
+
+    function test() public {}
 
     // --- Token ---
     function transferFrom(address src, address dst, uint wad) override public returns (bool) {

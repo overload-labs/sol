@@ -32,7 +32,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);
     event Delegate(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
     event Redelegate(DelegationKey indexed from, DelegationKey indexed to, bytes data);
-    event Undelegating(DelegationKey indexed key, uint256 delta, bytes data);
+    event Undelegating(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
     event Undelegate(UndelegationKey indexed key, int256 position, bytes data);
     event Jail(address indexed consensus, address indexed validator, uint256 jailtime, uint256 timestamp);
 
@@ -101,6 +101,22 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
             return delegations[owner][token][index];
         } else {
             return DelegationLib.zero();
+        }
+    }
+
+    function getDelegation(DelegationKey memory key) public view returns (Delegation memory delegation) {
+        (delegation, ) = delegations.get(key, false);
+    }
+
+    function getUndelegationLength(address owner, address token) public view returns (uint256) {
+        return undelegations[owner][token].length;
+    }
+
+    function getUndelegation(address owner, address token, uint256 index) public view returns (Undelegation memory) {
+        if (index < undelegations[owner][token].length) {
+            return undelegations[owner][token][index];
+        } else {
+            return UndelegationLib.zero();
         }
     }
 
@@ -235,7 +251,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         uint256 delta,
         bytes calldata data,
         bool strict
-    ) public lock returns (bool, UndelegationKey memory undelegationKey) {
+    ) public lock returns (bool, UndelegationKey memory undelegationKey, uint256 insertIndex) {
         // Check parameters
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
         require(delta > 0, Zero());
@@ -274,7 +290,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
                 amount: delta,
                 completion: block.timestamp + undelegatingDelay[key.consensus]
             });
-            undelegations.add(undelegationKey);
+            insertIndex = undelegations.add(undelegationKey);
         } else {
             // If there's no cooldown, we try moving tokens to `unbonded`.
             // Tokens are moved from to `unbonded` iff it creates a new lower maxima.
@@ -285,9 +301,9 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         // Non-strict hook call
         _afterUndelegatingHook(key.consensus, gasBudget, key, delta, delegation, data, strict);
 
-        emit Undelegating(key, delta, data);
+        emit Undelegating(key, delta, data, strict);
 
-        return (true, undelegationKey);
+        return (true, undelegationKey, insertIndex);
     }
 
     function undelegate(UndelegationKey memory key, int256 position, bytes calldata data) public lock returns (bool) {

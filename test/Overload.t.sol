@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
 import {DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
+import {UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
@@ -19,6 +20,7 @@ contract OverloadTest is Test {
     ERC20Mock public token;
     ERC20Mock public tokenA;
     ERC20Mock public tokenB;
+    ERC20Fee public tokenFee;
 
     function setUp() public {
         overload = new Overload();
@@ -26,6 +28,9 @@ contract OverloadTest is Test {
         token = new ERC20Mock("Test", "TEST", 18);
         tokenA = new ERC20Mock("Token A", "A", 18);
         tokenB = new ERC20Mock("Token B", "B", 18);
+
+        vm.prank(address(0xBEEF));
+        tokenFee = new ERC20Fee(1e18, 1_000);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -74,6 +79,35 @@ contract OverloadTest is Test {
         overload.delegate(key, amount, "", strict);
     }
 
+    function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory ukey, uint256) {
+        DelegationKey memory key = DelegationKey({
+            owner: user,
+            token: address(token),
+            consensus: consensus,
+            validator: validator
+        });
+
+        vm.prank(user);
+        return overload.undelegating(key, amount, "", strict);
+    }
+
+    function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory ukey, uint256) {
+        DelegationKey memory key = DelegationKey({
+            owner: user,
+            token: address(token_),
+            consensus: consensus,
+            validator: validator
+        });
+
+        vm.prank(user);
+        return overload.undelegating(key, amount, "", strict);
+    }
+
+    function setUndelegatingDelay(address consensus, uint256 delay) public {
+        vm.prank(consensus);
+        overload.setUndelegatingDelay(consensus, delay);
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 DEPOSIT
     //////////////////////////////////////////////////////////////*/
@@ -93,9 +127,6 @@ contract OverloadTest is Test {
     }
 
     function test_deposit_fee() public {
-        vm.prank(address(0xBEEF));
-        ERC20Fee tokenFee = new ERC20Fee(1e18, 1_000);
-
         vm.prank(address(0xBEEF));
         tokenFee.approve(address(overload), 10_000);
 
@@ -129,9 +160,6 @@ contract OverloadTest is Test {
     }
 
     function test_withdraw_fee() public {
-        vm.prank(address(0xBEEF));
-        ERC20Fee tokenFee = new ERC20Fee(1e18, 1_000);
-
         vm.prank(address(0xBEEF));
         tokenFee.approve(address(overload), 10_000);
         vm.prank(address(0xBEEF));
@@ -369,5 +397,231 @@ contract OverloadTest is Test {
 
         vm.expectRevert(Overload.MaxDelegationsReached.selector);
         delegate(address(0xBEEF), address(uint160(123)), address(uint160(123)), 1, true);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                              UNDELEGATING
+    //////////////////////////////////////////////////////////////*/
+
+    function test_undelegating_noUndelegatingDelay() public {
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xCCCC),
+            validator: address(0xFFFF)
+        });
+        vm.prank(address(0xBEEF));
+        vm.expectEmit(true, true, true, true);
+        emit Overload.Undelegating(key, 25, "", true);
+        (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, 25, "", true));
+        assertTrue(success);
+        assertEq(ukey.owner, address(0));
+        assertEq(ukey.token, address(0));
+        assertEq(ukey.consensus, address(0));
+        assertEq(ukey.validator, address(0));
+        assertEq(ukey.amount, 0);
+        assertEq(ukey.completion, 0);
+
+        assertTrue(overload.delegated(address(0xBEEF), address(token), address(0xCCCC)));
+        assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xFFFF));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).amount, 25);
+
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 75);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 25);
+
+        vm.prank(address(0xBEEF));
+        (success, ukey, ) = (overload.undelegating(key, 25, "", true));
+
+        assertFalse(overload.delegated(address(0xBEEF), address(token), address(0xCCCC)));
+        assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 0);
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).amount, 0);
+
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 100);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 0);
+    }
+
+    function test_undelegating_withUndelegatingDelay() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xCCCC),
+            validator: address(0xFFFF)
+        });
+        vm.prank(address(0xBEEF));
+        (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, 25, "", true));
+        assertTrue(success);
+        assertEq(ukey.owner, address(0xBEEF));
+        assertEq(ukey.token, address(token));
+        assertEq(ukey.consensus, address(0xCCCC));
+        assertEq(ukey.validator, address(0xFFFF));
+        assertEq(ukey.amount, 25);
+        assertEq(ukey.completion, 501);
+
+        assertTrue(overload.delegated(address(0xBEEF), address(token), address(0xCCCC)));
+        assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xFFFF));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).amount, 25);
+
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 50);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 50);
+    }
+
+    function test_undelegating_whenMultipleDelegationsExist() public {
+        setUndelegatingDelay(address(0xC), 500);
+
+        deposit(tokenA, address(0xBEEF), 100);
+        deposit(tokenB, address(0xBEEF), 100);
+
+        delegate(tokenA, address(0xBEEF), address(0xA), address(0x1), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xB), address(0x2), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xC), address(0x3), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xD), address(0x4), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xE), address(0x1), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xF), address(0x1), 100, true);
+
+        delegate(tokenB, address(0xBEEF), address(0xA), address(0x1), 100, true);
+        delegate(tokenB, address(0xBEEF), address(0xB), address(0x2), 100, true);
+        delegate(tokenB, address(0xBEEF), address(0xC), address(0x3), 100, true);
+        delegate(tokenB, address(0xBEEF), address(0xD), address(0x4), 100, true);
+        delegate(tokenB, address(0xBEEF), address(0xE), address(0x1), 100, true);
+        delegate(tokenB, address(0xBEEF), address(0xF), address(0x1), 50, true);
+
+        // Undelegating
+        undelegating(tokenB, address(0xBEEF), address(0xC), address(0x3), 50, true);
+
+        // Assert
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(tokenB),
+            consensus: address(0xC),
+            validator: address(0x3)
+        });
+        assertEq(overload.getDelegationsLength(address(0xBEEF), address(tokenB)), 6);
+        assertEq(overload.getDelegation(key).consensus, address(0xC));
+        assertEq(overload.getDelegation(key).validator, address(0x3));
+        assertEq(overload.getDelegation(key).amount, 50);
+
+        assertEq(overload.getUndelegationLength(address(0xBEEF), address(tokenB)), 1);
+    }
+
+    function test_undelegating_multipleUndelegationsWithDuplicates() public {
+        setUndelegatingDelay(address(0xA), 500);
+        setUndelegatingDelay(address(0xB), 500);
+        setUndelegatingDelay(address(0xC), 500);
+
+        deposit(tokenA, address(0xBEEF), 100);
+
+        delegate(tokenA, address(0xBEEF), address(0xA), address(0x1), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xB), address(0x2), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xC), address(0x3), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xD), address(0x4), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xE), address(0x1), 100, true);
+        delegate(tokenA, address(0xBEEF), address(0xF), address(0x1), 100, true);
+
+        undelegating(tokenA, address(0xBEEF), address(0xA), address(0x1), 10, true);
+        undelegating(tokenA, address(0xBEEF), address(0xA), address(0x1), 10, true);
+        undelegating(tokenA, address(0xBEEF), address(0xA), address(0x1), 10, true);
+        undelegating(tokenA, address(0xBEEF), address(0xB), address(0x2), 10, true);
+        undelegating(tokenA, address(0xBEEF), address(0xB), address(0x2), 10, true);
+        undelegating(tokenA, address(0xBEEF), address(0xC), address(0x3), 10, true);
+
+        assertEq(overload.getUndelegationLength(address(0xBEEF), address(tokenA)), 6);
+    }
+
+    function test_fail_undelegating_nonExistentDelegation() public {
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xCCCC),
+            validator: address(0xFFFF)
+        });
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(Overload.NotDelegated.selector);
+        overload.undelegating(key, 1, "", true);
+    }
+
+    // Should fail when (owner, token, consensus) is correct, but the `validator`is not.
+    function test_fail_undelegating_delegationNotFound() public {
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        vm.expectRevert(DelegationNotFound.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0x1234), 50, true);
+    }
+
+    function test_fail_undelegating_overflow() public {
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        vm.expectRevert(Overload.Overflow.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 101, true);
+
+        setUndelegatingDelay(address(0xCCCC), 500);
+        vm.expectRevert(Overload.Overflow.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 101, true);
+    }
+
+    function test_fail_undelegating_jailed() public {
+        // Need to increase this as contract does not take low default `block.timestamp` into account
+        vm.warp(1_000_000);
+
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        vm.prank(address(0xCCCC));
+        overload.jail(address(0xFFFF), 1 days);
+        vm.expectRevert(Overload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        // After jailtime passed
+        vm.warp(1_000_000 + 1 days - 1);
+        vm.expectRevert(Overload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        vm.warp(1_000_000 + 1 days);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+    }
+
+    function test_fail_delegate_notOperator() public {
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xCCCC),
+            validator: address(0xFFFF)
+        });
+        vm.prank(address(0xABCD));
+        vm.expectRevert(Overload.Unauthorized.selector);
+        overload.undelegating(key, 50, "", true);
+    }
+
+    function test_fail_undelegating_zero() public {
+        vm.expectRevert(Overload.Zero.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 0, true);
+    }
+
+    function test_fail_undelegating_maxUndelegations() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 1000);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1000, true);
+
+        for (uint256 i = 0; i < 32; i++) {
+            undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 10, true);
+        }
+
+        vm.expectRevert(Overload.MaxUndelegationsReached.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 10, true);
     }
 }

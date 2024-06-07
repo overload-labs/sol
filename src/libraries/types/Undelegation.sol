@@ -95,7 +95,8 @@ library UndelegationLib {
     function add(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
         UndelegationKey memory key
-    ) internal {
+    ) internal returns (uint256 index) {
+        index = map[key.owner][key.token].length;
         map[key.owner][key.token].push(Undelegation({
             consensus: key.consensus,
             validator: key.validator,

@@ -19,6 +19,8 @@ contract ConsensusBeforeDelegateMock {
             interfaceId == IHOverload.beforeDelegate.selector ||
             interfaceId == IHOverload.beforeUndelegating.selector;
     }
+
+    function test() public {}
 }
 
 contract ConsensusRevertAllMock is IHOverload {
@@ -73,4 +75,6 @@ contract ConsensusRevertAllMock is IHOverload {
             interfaceId == IHOverload.beforeUndelegate.selector ||
             interfaceId == IHOverload.afterUndelegate.selector;
     }
+
+    function test() public {}
 }
