@@ -96,7 +96,11 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     }
 
     function getDelegation(address owner, address token, uint256 index) public view returns (Delegation memory) {
-        return delegations[owner][token][index];
+        if (index < delegations[owner][token].length) {
+            return delegations[owner][token][index];
+        } else {
+            return DelegationLib.zero();
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -235,9 +239,9 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
         require(delta > 0, Zero());
         require(delegated[key.owner][key.token][key.consensus], NotFound());
-        require(undelegations[key.owner][key.token].length <= maxUndelegations, MaxUndelegationsReached());
+        require(undelegations[key.owner][key.token].length < maxUndelegations, MaxUndelegationsReached());
 
-        // Check parameters against the read delegation object
+        // Strictly get delegation and check parameters against it
         (Delegation memory delegation, int256 index) = delegations.get(key, true);
         require(key.consensus == delegation.consensus, MismatchAddress(key.consensus, delegation.consensus));
         require(key.validator == delegation.validator, MismatchAddress(key.validator, delegation.validator));
