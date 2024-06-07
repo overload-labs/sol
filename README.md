@@ -18,22 +18,27 @@ lib/
 
 src/
 ├─ abstracts/
-│  ├─ COverload.sol
-│  └─ Lock.sol
+│  ├─ COverload.sol - "The hook call logic for Overload.sol"
+│  └─ Lock.sol - "Reentrancy guard"
 ├─ interfaces/
-│  ├─ IHOverload.sol
-│  └─ IOverload.sol
+│  ├─ IHOverload.sol - "Interface for AVSs that implement Overload.sol hooks"
+│  └─ IOverload.sol - "Interface for Overload.sol"
 ├─ libraries/
 │  ├─ types/
-│  │  ├─ Delegation.sol
-│  │  └─ Undelegation.sol
-│  ├─ CastLib.sol
-│  ├─ FunctionCallLib.sol
-│  ├─ HookCallLib.sol
-│  └─ TokenIdLib.sol
+│  │  ├─ Delegation.sol - "The delegation type, created when `delegate` is called"
+│  │  └─ Undelegation.sol - "The undelegation type, created when `undelegating` is called"
+│  ├─ CastLib.sol - "Safe casting library"
+│  ├─ FunctionCallLib.sol - "Address calls, partially forked from OpenZeppelin's Address.sol library"
+│  ├─ HookCallLib.sol - "Hook call logic that COverload.sol utilizes"
+│  └─ TokenIdLib.sol - "Convert `address` to `uint256` and vice versa"
 ├─ tokens/
-│  └─ ERC6909.sol
-└─ Overload.sol
+│  └─ ERC6909.sol - "Forked from Uniswap V4"
+└─ Overload.sol - "The core contract"
+
+test/
+├─ mocks/
+├─ Overoad.consensus.t.sol - "Test malicious consensus contracts."
+└─ Overload.t.sol - "Test Overload.sol generally"
 ```
 
 ## Overview
@@ -52,7 +57,7 @@ function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, 
 
 where the `DelegationKey` data structure is defined as
 
-```
+```solidity
 /// @dev `DelegationKey`s are used to identify the unique Delegation objects.
 struct DelegationKey {
     address owner;
