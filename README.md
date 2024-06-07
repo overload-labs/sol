@@ -120,29 +120,36 @@ The amount being freed or bonded is mainly managed by the internal `_bondTokens`
 
 ### Strict Mode
 
-The main interface for Overload that users are expected to interact with are the six methods in the below.
+Strict mode is a feature that can be enabled or disabled by the user themself on `Overload.sol` state transision calls (`delegate`, etc.).
+
+If `strict` is true, hook calls that revert ***will*** revert the whole transaction.
+If `strict` is false, hook calls that revert ***will not*** revert the whole transaction.
+
+Below is a table of how consensus contracts are expected to read the `strict` parameter in hook calls.
 
 | Method | Strict Mode |
 | :--- | :--- |
 | `deposit` | None |
 | `withdraw` | None |
-| `delegate` | Optional, but expected to be `true` by consensus contracts |
+| `delegate` | Optional, but expected to be `true` by consensus contracts using a `require` assertion.  |
 | `redelegate` | Optional |
 | `undelegating` | Optional |
 | `undelegate` | Optional |
+
+When a consensus contract has `require(strict == true, StrictFalse())` assertion in the code for `beforeDelegate` hook call, this then implements the correct behaviour (besides the point that gas never exceeds `1_000_000`, which would also be fine). As long as the restake accounting is synced corretly between the consensus contract and in the `Overload.sol`, then everything is fine (made possible by assertions and being below `1_000_000` gas consumed in the hook call).
 
 The table above enables users to restake to any external contract and always be able to retain the ability to undelegate. We will walk through the examples below of an example implementation that covers perspectives from both `Overload.sol` and and `Consensus.sol` (AVS) contract.
 
 ### Hooks
 
-When building a consensus contract inheriting `IHOverload.sol` fully, we expect the behaviour to be as follows.
+When building a consensus contract inheriting `IHOverload.sol` fully, the behaviour should be as follows.
 
 | Hooks | Strict Mode | Result |
 | :--- | :--- | :--- |
 | `beforeDelegate`, `afterDelegate` | Yes | `OK` |
-| `beforeDelegate`, `afterDelegate` | No | Do nothing. If the hook call fails, then the consensus contract should not register anything. |
+| `beforeDelegate`, `afterDelegate` | No | Do nothing. As `delegate` is the entry function, a consensus contract can enforce the user to have `strict` as `true`. |
 | `beforeUndelegation`, `afterUndelegation` | Yes | `OK` |
-| `beforeUndelegation`, `afterUndelegation` | No | This is where the consensus contract needs to work within the `gasBudget` of `1_000_000`, as `Overload.sol` will guarantee that. Consensus contracts that use more than `1_000_000` is undefined behaviour. |
+| `beforeUndelegation`, `afterUndelegation` | No | This is where the consensus contract needs to work within the `gasBudget` of `1_000_000`, as `Overload.sol` guarantees that in the hook call. Consensus contracts that use more than `1_000_000` in their hook calls are deemed as undefined behaviour. |
 | `beforeRedelegate`, `afterRedelegate` | Yes | `OK` |
 | `beforeRedelegate`, `afterRedelegate` | No | The hook calls have a gas budget of `1_000_000`, otherwise undefined behaviour. |
 | `beforeUndelegate`, `afterUndelegate` | Yes | `OK` |
