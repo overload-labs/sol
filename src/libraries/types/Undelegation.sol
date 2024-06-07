@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import {CastLib} from "../CastLib.sol";
 
+error UndelegationNotFound();
+
 struct Undelegation {
     address consensus;
     address validator;
@@ -37,7 +39,7 @@ library UndelegationLib {
             delegation = map[key.owner][key.token][CastLib.u256(index)];
         } else {
             if (strict) {
-                revert("NOT_FOUND");
+                revert UndelegationNotFound();
             } else {
                 index = -1;
                 delegation = zero();

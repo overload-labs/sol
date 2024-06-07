@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
 import {DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
-import {UndelegationKey} from "../src/libraries/types/Undelegation.sol";
+import {UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
@@ -638,10 +638,22 @@ contract OverloadTest is Test {
         setUndelegatingDelay(address(0xCCCC), 500);
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
+
         (, UndelegationKey memory ukey, uint256 index) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        // The bonded is still the same here.
+        // `balanceOf` + `bonded` needs to always equal the principal token amount.
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
 
         vm.warp(501);
         undelegate(address(0xBEEF), ukey, int256(index), "", true);
+
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 50);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 50);
     }
 
     function test_undelegate_noIndex() public {
@@ -654,6 +666,47 @@ contract OverloadTest is Test {
         undelegate(address(0xBEEF), ukey, int256(-1), "", true);
     }
 
-    function test_fail_undelegate_incompleteCompletion() public {
+    function test_fail_undelegate_nonMaturedDelegation() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        (, UndelegationKey memory ukey, ) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        vm.warp(500);
+        vm.expectRevert(Overload.NonMatureUndelegation.selector);
+        undelegate(address(0xBEEF), ukey, int256(-1), "", true);
+    }
+
+    function test_fail_undelegate_indexOutOfBounds() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        (, UndelegationKey memory ukey, ) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        vm.expectRevert(stdError.indexOOBError);
+        undelegate(address(0xBEEF), ukey, int256(1000), "", true);
+    }
+
+    function test_fail_undelegate_undelegationNotFound() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
+
+        UndelegationKey memory ukey = UndelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xCCCC),
+            validator: address(0xFFFF),
+            amount: 1,
+            maturity: 1
+        });
+        vm.expectRevert(UndelegationNotFound.selector);
+        undelegate(address(0xBEEF), ukey, int256(-1), "", true);
     }
 }
