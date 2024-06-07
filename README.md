@@ -47,45 +47,52 @@ test/
 
 Hence, token address of type `address` will be casted to `uint256` and will take up `160 bits` of data. This also ensures every token id is unique and makes ERC-6909 fully compatible with ERC-20 for accounting the tokens internally in the contract.
 
-### Restaking
+### Restaking Types
 
-After depositing tokens into `Overload.sol`, it becomes possible to `delegate` any amount of `balanceOf` value to any address. The delegation interface looks as follows
+There are two types in the restaking contract:
+
+- `Delegation`: When `delegate` is called, tokens can be bonded from `balanceOf` which then creates a `Delegation`.
+- `Undelegation`: When `undelegating` is called, an `Undelegation` object can be creaated depending on whether `withdrawalDelay` is `0` or non-zero.
+
+For identifying a specific `Delegation` or `Undelegation` object, there are two key types:
 
 ```solidity
-function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) external returns (bool);
-```
-
-where the `DelegationKey` data structure is defined as
-
-```solidity
-/// @dev `DelegationKey`s are used to identify the unique Delegation objects.
+/// @dev `DelegationKey`s are used to identify Delegation objects.
+/// @dev `DelegationKey`s are unique, i.e. a single `DelegationKey` will map to exactly one `Delegation`.
 struct DelegationKey {
     address owner;
     address token;
     address consensus;
     address validator;
 }
+
+/// @dev `UndelegationKey`s are used to identify Undelegation objects.
+/// @dev `UndelegationKey`s are non-unique, two `Undelegation`s can exist for one `UndelegationKey`.
+///     The `position` argument in `undelegating` is how `Overload.sol` tells these objects apart.
+struct UndelegationKey {
+    address owner;
+    address token;
+    address consensus;
+    address validator;
+    uint256 amount;
+    uint256 completion;
+}
 ```
 
-. There are two values to keep track of canonical/underlying balances, and two states and three state transistions for restaked balances.
+There are two values to keep track of: the canonical/underlying balance, and the restaked/bonded balance.
 
-- `balanceOf`: The default token balance for any ERC-20 token, mirrored as ERC-6909 tokens. This token balance can be deposited/withdrawn from without any restrictions. They are identical to ERC-20 token balances.
-- `bonded`: When tokens are restaked using a `DelegationKey`, tokens will be locked according to `max(d_0, ..., d_n)`, where `d_i` is the delegation amount for a restaking instance.
+- `balanceOf`: The default token balance for any ERC-20 token, mirrored as ERC-6909 tokens. This token balance can be deposited/withdrawn from without any restrictions. They are identical to ERC-20 token balances, but inside `Overload.sol`.
+- `bonded`: When tokens are restaked using the `delegate` function, tokens will be locked according to `max(d_0, ..., d_n)`, where `d_i` is the delegation amount for a restaking instance.
 
-The types that restaked instances can takes on are 
-
-- `Delegation`
-- `Undelegation`
-
-and the three state transitions are strictly
+The five main state transitions are:
 
 - `delegate`: Creates a restaking object and saves it into `delegations` mapping. Will increase bonding if and only if the restaked amount is greater than what's currently `bonded`.
+- `redelegate`: Modifes the `validator` value inside a `Delegation`. No additional delay to change validators.
 - `undelegating`: State transitions a restaked instance into `undelegations` mapping.
 - `undelegate`: After the `Undelegation` has finished the withdrawal delay, the restaked instance can be `undelegated` which deletes the restaked instance and possibly frees up `bonded` tokens into `balanceOf` (depends if there are other restaked instances, and what their values are).
+- `jail`: A consensus contract can jail a validator, which prevents assets from being withdrawn until a specified timestamp. A validator cannot be continously jailed, which prevents infinite jailing and would imply soft-locked assets. Instead, there's a `jailCooldown` window in-between jailings that a validator can utilize to escape a malicious consensus contract that e.g. jails everyone.
 
-that can be called to move between all states.
-
-The exact possible state transistions are as follows.
+Showing the possible state transisions below, as a table (`redelegate` and `jail` excluded):
 
 | State | Context | Transition/Function | Result |
 | :--- | :--- | :--- | :--- |
@@ -96,7 +103,7 @@ The exact possible state transistions are as follows.
 | `Undelegation` | Before undelegation delay has passed | `undelegate` | `REVERT` |
 | `Undelegation` | After undelegation delay has passed | `undelegate` | `Balance` |
 
-The balance increase or decreases based on the state transisions and on the amount being moved.
+And a table for the balance increase/decreases, based on the state transisions, and on the amount being moved:
 
 | Transition/Function | Context | Result |
 | :--- | :--- | :--- |
@@ -108,6 +115,8 @@ The balance increase or decreases based on the state transisions and on the amou
 | `undelegating` | `amount < max(d_0, ..., d_n)` (Without delay) | Do nothing |
 | `undelegate` | `amount == max(d_0, ..., d_n)` | Decrease bonded tokens to `max(d_0, ..., d_n)` excluding the current undelegated |
 | `undelegate` | `amount < max(d_0, ..., d_n)` | Do nothing |
+
+The amount being freed or bonded is mainly managed by the internal `_bondTokens` and `_bondUpdate` functions in `Overload.sol`.
 
 ### Strict Mode
 
