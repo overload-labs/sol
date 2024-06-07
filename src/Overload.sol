@@ -150,10 +150,11 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function deposit(address owner, address token, uint256 amount) public lock returns (bool) {
+        require(amount > 0, Zero());
+
         uint256 balance = IERC20(token).balanceOf(address(this));
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
         uint256 deposited = IERC20(token).balanceOf(address(this)) - balance;
-
         _mint(owner, token.convertToId(), deposited);
 
         emit Deposit(msg.sender, owner, token, deposited);
@@ -169,6 +170,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
                 allowance[owner][msg.sender][token.convertToId()] = allowed - amount;
             }
         }
+        require(amount > 0, Zero());
 
         _burn(owner, token.convertToId(), amount);
         SafeERC20.safeTransfer(IERC20(token), recipient, amount);
