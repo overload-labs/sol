@@ -11,7 +11,7 @@ import {Overload} from "../src/Overload.sol";
 import {ERC20Fee} from "./mocks/ERC20Fee.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 
-contract OverloadTest is Test {
+contract OverloadFuzzTest is Test {
     using TokenIdLib for uint256;
     using TokenIdLib for address;
 
@@ -31,7 +31,7 @@ contract OverloadTest is Test {
                                   FUZZ
     //////////////////////////////////////////////////////////////*/
 
-    function test_deposit(address owner, uint256 amount) public {
+    function test_fuzz_deposit(address owner, uint256 amount) public {
         if (owner == address(overload)) {
             return;
         }
@@ -55,7 +55,7 @@ contract OverloadTest is Test {
         assertEq(overload.balanceOf(owner, address(token).convertToId()), amount);
     }
 
-    function test_withdraw(address owner, uint256 depositAmount, uint256 withdrawAmount, address recipient) public {
+    function test_fuzz_withdraw(address owner, uint256 depositAmount, uint256 withdrawAmount, address recipient) public {
         if (owner == address(overload)) {
             return;
         }
@@ -92,6 +92,49 @@ contract OverloadTest is Test {
             if (recipient != address(overload)) {
                 assertEq(token.balanceOf(recipient), withdrawAmount);
             }
+        }
+    }
+
+    function test_fuzz_delegate(address owner, address consensus, address validator, uint256 amount, bytes memory data, bool strict) public {
+        if (owner == address(overload)) {
+            return;
+        }
+
+        // Mint
+        token.mint(owner, amount);
+
+        // Delegate
+        DelegationKey memory key = DelegationKey({
+            owner: owner,
+            token: address(token),
+            consensus: consensus,
+            validator: validator
+        });
+
+        if (amount == 0) {
+            vm.prank(owner);
+            vm.expectRevert(Overload.Zero.selector);
+            overload.delegate(key, amount, data, strict);
+        } else {
+            // Deposit
+            vm.prank(owner);
+            token.approve(address(overload), amount);
+            vm.prank(owner);
+            overload.deposit(owner, address(token), amount);
+
+            // Delegate
+            vm.prank(owner);
+            vm.expectEmit(true, true, true, true);
+            emit Overload.Delegate(key, amount, data, strict);
+            assertTrue(overload.delegate(key, amount, data, strict));
+
+            assertEq(overload.getDelegationsLength(owner, address(token)), 1);
+            assertEq(overload.getDelegation(owner, address(token), 0).consensus, consensus);
+            assertEq(overload.getDelegation(owner, address(token), 0).validator, validator);
+            assertEq(overload.getDelegation(owner, address(token), 0).amount, amount);
+            assertEq(overload.balanceOf(owner, address(token).convertToId()), 0);
+            assertEq(overload.bonded(owner, address(token)), amount);
+            assertTrue(overload.delegated(owner, address(token), consensus));
         }
     }
 }
