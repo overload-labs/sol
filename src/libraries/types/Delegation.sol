@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import {CastLib} from "../CastLib.sol";
 
+error DelegationNotFound();
+
 /// @dev `Delegation` objects are unique. There cannot be duplicates inside the mapping.
 struct Delegation {
     address consensus;
@@ -35,7 +37,7 @@ library DelegationLib {
             delegation = map[key.owner][key.token][CastLib.u256(index)];
         } else {
             if (strict) {
-                revert("Delegation.get: NOT_FOUND");
+                revert DelegationNotFound();
             } else {
                 index = -1;
                 delegation = zero();

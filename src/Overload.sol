@@ -173,7 +173,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         if (delegated[key.owner][key.token][key.consensus]) {
             int256 index;
 
-            // Get delegation
+            // Strictly get delegation
             (delegation, index) = delegations.get(key, true);
             require((delegation.amount + delta) <= balance, Overflow());
 
@@ -191,7 +191,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
             delegated[key.owner][key.token][key.consensus] = true;
         }
 
-        // After nhook call
+        // After hook call
         _afterDelegateHook(key.consensus, gasBudget, key, delta, delegation, data, strict);
 
         emit Delegate(key, delta, data, strict);
