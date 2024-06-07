@@ -233,15 +233,18 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         require(from.owner == to.owner, MismatchAddress(from.owner, to.owner));
         require(from.token == to.token, MismatchAddress(from.token, to.token));
         require(from.consensus == to.consensus, MismatchAddress(from.consensus, to.consensus));
+        require(from.validator != to.validator, Zero());
         require(msg.sender == to.owner || !isOperator[to.owner][msg.sender], Unauthorized());
     
         (, int256 index) = delegations.get(from, true);
         require(index >= 0, NotFound());
 
+        // Before hook
         _beforeRedelegateHook(from.consensus, gasBudget, from, to, data, strict);
 
         delegations[from.owner][from.token][index.u256()].validator = to.validator;
 
+        // After hook
         _afterRedelegateHook(from.consensus, gasBudget, from, to, data, strict);
 
         emit Redelegate(from, to, data, strict);

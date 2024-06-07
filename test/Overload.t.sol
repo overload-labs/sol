@@ -79,6 +79,24 @@ contract OverloadTest is Test {
         overload.delegate(key, amount, "", strict);
     }
 
+    function redelegate(address user, address consensus, address fromValidator, address toValidator) public returns (bool) {
+        DelegationKey memory fromKey = DelegationKey({
+            owner: user,
+            token: address(token),
+            consensus: consensus,
+            validator: fromValidator
+        });
+        DelegationKey memory toKey = DelegationKey({
+            owner: user,
+            token: address(token),
+            consensus: consensus,
+            validator: toValidator
+        });
+
+        vm.prank(user);
+        return overload.redelegate(fromKey, toKey, "", true);
+    }
+
     function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, uint256) {
         DelegationKey memory key = DelegationKey({
             owner: user,
@@ -402,6 +420,104 @@ contract OverloadTest is Test {
 
         vm.expectRevert(Overload.MaxDelegationsReached.selector);
         delegate(address(0xBEEF), address(uint160(123)), address(uint160(123)), 1, true);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                               REDELEGATE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_redelegate() public {
+        deposit(address(0xBEEF), 1000);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+
+        assertTrue(redelegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), address(0xEEEE)));
+        assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xEEEE));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).amount, 50);
+    }
+
+    function test_fail_redelegate_sameValidator() public {
+        deposit(address(0xBEEF), 1000);
+
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+        vm.expectRevert(Overload.Zero.selector);
+        redelegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), address(0xFFFF));
+    }
+
+    function test_fail_redelegate_mismatch() public {
+        deposit(address(0xBEEF), 1000);
+
+        DelegationKey memory fromKey = DelegationKey({
+            owner: address(0),
+            token: address(0),
+            consensus: address(0),
+            validator: address(0)
+        });
+        DelegationKey memory toKey = DelegationKey({
+            owner: address(0),
+            token: address(0),
+            consensus: address(0),
+            validator: address(0)
+        });
+
+        // Case `owner` mismatch
+        fromKey.owner = address(0xBEEF);
+        fromKey.token = address(token);
+        fromKey.consensus = address(0xCCCC);
+        fromKey.validator = address(0xFFFF);
+        toKey.owner = address(0xABCD);
+        toKey.token = address(token);
+        toKey.consensus = address(0xCCCC);
+        toKey.validator = address(0xFFFF);
+
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
+        overload.redelegate(fromKey, toKey, "", true);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
+        overload.redelegate(fromKey, toKey, "", false);
+
+        // Case `token` mismatch
+        fromKey.owner = address(0xBEEF);
+        fromKey.token = address(token);
+        fromKey.consensus = address(0xCCCC);
+        fromKey.validator = address(0xFFFF);
+        toKey.owner = address(0xBEEF);
+        toKey.token = address(tokenA);
+        toKey.consensus = address(0xCCCC);
+        toKey.validator = address(0xFFFF);
+
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(token), address(tokenA)));
+        overload.redelegate(fromKey, toKey, "", true);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(token), address(tokenA)));
+        overload.redelegate(fromKey, toKey, "", false);
+
+        // Case `consensus` mismatch
+        fromKey.owner = address(0xBEEF);
+        fromKey.token = address(token);
+        fromKey.consensus = address(0xCCCC);
+        fromKey.validator = address(0xFFFF);
+        toKey.owner = address(0xBEEF);
+        toKey.token = address(token);
+        toKey.consensus = address(0xCCCA);
+        toKey.validator = address(0xFFFF);
+
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
+        overload.redelegate(fromKey, toKey, "", true);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
+        overload.redelegate(fromKey, toKey, "", false);
+    }
+
+    function test_fail_redelegate_delegationNotFound() public {
+        deposit(address(0xBEEF), 1000);
+
+        vm.expectRevert(DelegationNotFound.selector);
+        redelegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), address(0xEEEE));
     }
 
     /*//////////////////////////////////////////////////////////////
