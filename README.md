@@ -6,7 +6,7 @@
 </p>
 <br />
 
-This repository contains the core contract, `Overload.sol`, for Overload. AVSs built on top of `Overload.sol` is expected to implement `IHOverload.sol` which is the interface for hook callbacks.
+This repository contains the core contract, `Overload.sol`, for Overload. The AVSs that build on top of `Overload.sol` is expected to implement the `IHOverload.sol` hook interace.
 
 ## Contracts
 
