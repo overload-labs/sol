@@ -84,6 +84,22 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     mapping(address consensus => mapping(address validator => uint256 timestamp)) public jailed;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           VIEWS                            */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function getDelegations(address owner, address token) public view returns (Delegation[] memory) {
+        return delegations[owner][token];
+    }
+
+    function getDelegationsLength(address owner, address token) public view returns (uint256) {
+        return delegations[owner][token].length;
+    }
+
+    function getDelegation(address owner, address token, uint256 index) public view returns (Delegation memory) {
+        return delegations[owner][token][index];
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ADMIN                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -144,6 +160,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
                 allowance[key.owner][msg.sender][key.token.convertToId()] = allowed - delta;
             }
         }
+        require(delta > 0, Zero());
         // Check below max delegations amount
         require(delegations[key.owner][key.token].length < maxDelegations, MaxDelegationsReached());
 
