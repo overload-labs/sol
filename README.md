@@ -68,7 +68,7 @@ struct DelegationKey {
 
 /// @dev `UndelegationKey`s are used to identify Undelegation objects.
 /// @dev `UndelegationKey`s are non-unique, two `Undelegation`s can exist for one `UndelegationKey`.
-///     The `position` argument in `undelegating` is how `Overload.sol` tells these objects apart.
+///     The `position` argument in `undelegate` is how `Overload.sol` tells these objects apart.
 struct UndelegationKey {
     address owner;
     address token;
