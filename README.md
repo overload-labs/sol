@@ -161,10 +161,30 @@ The `strict` variable prevents consensus contracts from `revert`:ing `undelegati
 
 Hooks in Overload differ from e.g. Uniswap V4. Instead of having hook permissions included in the addresses, we instead utilize the commonly used ERC-165 standard instead. If a contract returns true for a hook method interface from `IHOverload.sol`, then `Overload.sol` will try to call the hook on the target contract.
 
+## Install
+
+```
+$ forge install
+```
+
+## Build
+
+```
+$ forge build
+```
+
+## Test
+
+```
+$ forge test
+```
+
 ## Coverage
 
+Genenrate a coverage summary:
+
 ```sh
-forge coverage --ir-minimum
+$ forge coverage --ir-minimum
 ```
 
 ```
@@ -182,4 +202,15 @@ forge coverage --ir-minimum
 | src/tokens/ERC6909.sol               | 41.67% (10/24)   | 35.71% (10/28)   | 0.00% (0/4)     | 57.14% (4/7)   |
 | test/mocks/ConsensusMock.sol         | 100.00% (10/10)  | 100.00% (18/18)  | 100.00% (0/0)   | 100.00% (1/1)  |
 | Total                                | 85.23% (225/264) | 84.23% (267/317) | 38.96% (60/154) | 82.46% (47/57) |
+```
+
+Generate a coverage report with `lcov`:
+
+```sh
+$ brew install lcov
+```
+
+```sh
+$ forge coverage --ir-minimum --fuzz-runs 100 --report lcov
+$ genhtml -o coverage_report lcov.info --ignore-errors inconsistent --ignore-errors corrupt
 ```
