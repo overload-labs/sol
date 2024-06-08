@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import {DelegationKey, Delegation} from "../../src/libraries/types/Delegation.sol";
 import {UndelegationKey, Undelegation} from "../../src/libraries/types/Undelegation.sol";
-import {IHOverload} from "../../src/interfaces/IHOverload.sol";
+import {HOverload} from "../../src/interfaces/HOverload.sol";
 
-contract ConsensusHookParametersMock is IHOverload {
+contract ConsensusHookParametersMock is HOverload {
     address public overload;
     address public token;
 
@@ -24,7 +24,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
 
-        return IHOverload.beforeDelegate.selector;
+        return HOverload.beforeDelegate.selector;
     }
 
     function afterDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, Delegation memory delegation, uint256 index) public view returns (bytes4) {
@@ -41,7 +41,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(delegation.amount == 100);
         require(index == 0);
 
-        return IHOverload.afterDelegate.selector;
+        return HOverload.afterDelegate.selector;
     }
 
     function beforeRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data, bool strict) public view returns (bytes4) {
@@ -57,7 +57,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
 
-        return IHOverload.beforeRedelegate.selector;
+        return HOverload.beforeRedelegate.selector;
     }
 
     function afterRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data, bool strict) public view returns (bytes4) {
@@ -73,7 +73,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
 
-        return IHOverload.afterRedelegate.selector;
+        return HOverload.afterRedelegate.selector;
     }
 
     function beforeUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, uint256 index) public view returns (bytes4) {
@@ -87,7 +87,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(strict == true);
         require(index == 0);
 
-        return IHOverload.beforeUndelegating.selector;
+        return HOverload.beforeUndelegating.selector;
     }
 
     function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, UndelegationKey memory ukey, uint256 index) public view returns (bytes4) {
@@ -107,7 +107,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(ukey.maturity == 501);
         require(index == 0);
 
-        return IHOverload.afterUndelegating.selector;
+        return HOverload.afterUndelegating.selector;
     }
 
     function beforeUndelegate(address sender, UndelegationKey memory ukey, int256 position, bytes calldata data, bool strict, uint256 index) public view returns (bytes4) {
@@ -123,7 +123,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(strict == true);
         require(index == 0);
 
-        return IHOverload.beforeUndelegate.selector;
+        return HOverload.beforeUndelegate.selector;
     }
 
     function afterUndelegate(address sender, UndelegationKey memory ukey, int256 position, bytes calldata data, bool strict) public view returns (bytes4) {
@@ -138,26 +138,26 @@ contract ConsensusHookParametersMock is IHOverload {
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
 
-        return IHOverload.afterUndelegate.selector;
+        return HOverload.afterUndelegate.selector;
     }
 
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeDelegate.selector ||
-            interfaceId == IHOverload.afterDelegate.selector ||
-            interfaceId == IHOverload.beforeRedelegate.selector ||
-            interfaceId == IHOverload.afterRedelegate.selector ||
-            interfaceId == IHOverload.beforeUndelegating.selector ||
-            interfaceId == IHOverload.afterUndelegating.selector ||
-            interfaceId == IHOverload.beforeUndelegate.selector ||
-            interfaceId == IHOverload.afterUndelegate.selector;
+            interfaceId == HOverload.beforeDelegate.selector ||
+            interfaceId == HOverload.afterDelegate.selector ||
+            interfaceId == HOverload.beforeRedelegate.selector ||
+            interfaceId == HOverload.afterRedelegate.selector ||
+            interfaceId == HOverload.beforeUndelegating.selector ||
+            interfaceId == HOverload.afterUndelegating.selector ||
+            interfaceId == HOverload.beforeUndelegate.selector ||
+            interfaceId == HOverload.afterUndelegate.selector;
     }
 
     function test() public {}
 }
 
-contract ConsensusRevertDelegateMock is IHOverload {
+contract ConsensusRevertDelegateMock is HOverload {
     address public overload;
 
     constructor(address overload_) {
@@ -187,14 +187,14 @@ contract ConsensusRevertDelegateMock is IHOverload {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeDelegate.selector ||
-            interfaceId == IHOverload.afterDelegate.selector;
+            interfaceId == HOverload.beforeDelegate.selector ||
+            interfaceId == HOverload.afterDelegate.selector;
     }
 
     function test() public {}
 }
 
-contract ConsensusRevertRedelegateMock is IHOverload {
+contract ConsensusRevertRedelegateMock is HOverload {
     address public overload;
 
     constructor(address overload_) {
@@ -224,14 +224,14 @@ contract ConsensusRevertRedelegateMock is IHOverload {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeRedelegate.selector ||
-            interfaceId == IHOverload.afterRedelegate.selector;
+            interfaceId == HOverload.beforeRedelegate.selector ||
+            interfaceId == HOverload.afterRedelegate.selector;
     }
 
     function test() public {}
 }
 
-contract ConsensusRevertUndelegatingMock is IHOverload {
+contract ConsensusRevertUndelegatingMock is HOverload {
     address public overload;
 
     constructor(address overload_) {
@@ -261,14 +261,14 @@ contract ConsensusRevertUndelegatingMock is IHOverload {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeUndelegating.selector ||
-            interfaceId == IHOverload.afterUndelegating.selector;
+            interfaceId == HOverload.beforeUndelegating.selector ||
+            interfaceId == HOverload.afterUndelegating.selector;
     }
 
     function test() public {}
 }
 
-contract ConsensusRevertUndelegateMock is IHOverload {
+contract ConsensusRevertUndelegateMock is HOverload {
     address public overload;
 
     constructor(address overload_) {
@@ -298,8 +298,8 @@ contract ConsensusRevertUndelegateMock is IHOverload {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeUndelegate.selector ||
-            interfaceId == IHOverload.afterUndelegate.selector;
+            interfaceId == HOverload.beforeUndelegate.selector ||
+            interfaceId == HOverload.afterUndelegate.selector;
     }
 
     function test() public {}
@@ -309,20 +309,20 @@ contract ConsensusNoHook {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeDelegate.selector ||
-            interfaceId == IHOverload.afterDelegate.selector ||
-            interfaceId == IHOverload.beforeRedelegate.selector ||
-            interfaceId == IHOverload.afterRedelegate.selector ||
-            interfaceId == IHOverload.beforeUndelegating.selector ||
-            interfaceId == IHOverload.afterUndelegating.selector ||
-            interfaceId == IHOverload.beforeUndelegate.selector ||
-            interfaceId == IHOverload.afterUndelegate.selector;
+            interfaceId == HOverload.beforeDelegate.selector ||
+            interfaceId == HOverload.afterDelegate.selector ||
+            interfaceId == HOverload.beforeRedelegate.selector ||
+            interfaceId == HOverload.afterRedelegate.selector ||
+            interfaceId == HOverload.beforeUndelegating.selector ||
+            interfaceId == HOverload.afterUndelegating.selector ||
+            interfaceId == HOverload.beforeUndelegate.selector ||
+            interfaceId == HOverload.afterUndelegate.selector;
     }
 
     function test() public {}
 }
 
-contract ConsensusNoERC165Interface is IHOverload {
+contract ConsensusNoERC165Interface is HOverload {
     function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {}
 
     function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
@@ -342,7 +342,7 @@ contract ConsensusNoERC165Interface is IHOverload {
     function test() public {}
 }
 
-contract ConsensusWhenERC165InterfaceReverts is IHOverload {
+contract ConsensusWhenERC165InterfaceReverts is HOverload {
     function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {}
 
     function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
@@ -366,9 +366,9 @@ contract ConsensusWhenERC165InterfaceReverts is IHOverload {
     function test() public {}
 }
 
-contract ConsensusWrongReturnValueOnHook is IHOverload {
+contract ConsensusWrongReturnValueOnHook is HOverload {
     function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {
-        return IHOverload.afterDelegate.selector;
+        return HOverload.afterDelegate.selector;
     }
 
     function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
@@ -388,7 +388,7 @@ contract ConsensusWrongReturnValueOnHook is IHOverload {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeDelegate.selector;
+            interfaceId == HOverload.beforeDelegate.selector;
     }
 
     function test() public {}
@@ -398,13 +398,13 @@ contract ConsensusInsufficientGasBudget {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeDelegate.selector;
+            interfaceId == HOverload.beforeDelegate.selector;
     }
 
     function test() public {}
 }
 
-contract ConsensusGasEater is IHOverload {
+contract ConsensusGasEater is HOverload {
     mapping(uint256 x => uint256 y) public slots;
 
     function set(uint256 x, uint256 y) public {
@@ -418,7 +418,7 @@ contract ConsensusGasEater is IHOverload {
             set(i, i);
         }
 
-        return IHOverload.beforeDelegate.selector;
+        return HOverload.beforeDelegate.selector;
     }
 
     function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
@@ -438,7 +438,7 @@ contract ConsensusGasEater is IHOverload {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeDelegate.selector;
+            interfaceId == HOverload.beforeDelegate.selector;
     }
 
     function test() public {}

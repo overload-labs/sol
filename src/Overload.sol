@@ -6,6 +6,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {COverload} from "./abstracts/COverload.sol";
 import {Lock} from "./abstracts/Lock.sol";
+import {EOverload} from "./interfaces/EOverload.sol";
 import {IOverload} from "./interfaces/IOverload.sol";
 import {CastLib} from "./libraries/CastLib.sol";
 import {TokenIdLib} from "./libraries/TokenIdLib.sol";
@@ -13,7 +14,10 @@ import {DelegationLib, Delegation, DelegationKey} from "./libraries/types/Delega
 import {UndelegationLib, Undelegation, UndelegationKey} from "./libraries/types/Undelegation.sol";
 import {ERC6909} from "./tokens/ERC6909.sol";
 
-contract Overload is IOverload, COverload, ERC6909, Lock {
+/// @title Overload
+/// @author @egozoq
+/// @notice A modular and general restaking contract.
+contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     using CastLib for uint256;
     using CastLib for int256;
     using TokenIdLib for uint256;
@@ -21,43 +25,6 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
 
     using DelegationLib for mapping(address owner => mapping(address token => Delegation[]));
     using UndelegationLib for mapping(address owner => mapping(address token => Undelegation[]));
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                           EVENTS                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    event SetUndelegatingDelay(address indexed consensus, uint256 cooldown);
-
-    event Deposit(address indexed caller, address indexed owner, address indexed token, uint256 amount);
-    event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);
-    event Delegate(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
-    event Redelegate(DelegationKey indexed from, DelegationKey indexed to, bytes data, bool strict);
-    event Undelegating(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
-    event Undelegate(UndelegationKey indexed key, int256 position, bytes data, bool strict);
-    event Jail(address indexed consensus, address indexed validator, uint256 jailtime, uint256 timestamp);
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                           ERRORS                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    // General errors
-    error Unauthorized();
-    error MismatchAddress(address a, address b);
-    error MismatchUint256(uint256 a, uint256 b);
-    error NotFound();
-    error Overflow();
-    error Fatal();
-    error Zero();
-
-    // Specific errors
-    error ValueExceedsMaxDelay();
-    error ValueExceedsMaxJailtime();
-    error MaxDelegationsReached();
-    error MaxUndelegationsReached();
-    error NonMatureUndelegation();
-    error JailOnCooldown();
-    error NotDelegated();
-    error Jailed();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */

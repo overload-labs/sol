@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
+import {EOverload} from "../src/interfaces/EOverload.sol";
 import {DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
 import {UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
@@ -43,12 +44,12 @@ contract OverloadFuzzTest is Test {
 
         if (amount == 0) {
             vm.prank(owner);
-            vm.expectRevert(Overload.Zero.selector);
+            vm.expectRevert(EOverload.Zero.selector);
             overload.deposit(owner, address(token), amount);
         } else {
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit Overload.Deposit(owner, owner, address(token), amount);
+            emit EOverload.Deposit(owner, owner, address(token), amount);
             assertTrue(overload.deposit(owner, address(token), amount));
         }
 
@@ -66,7 +67,7 @@ contract OverloadFuzzTest is Test {
         token.approve(address(overload), depositAmount);
         if (depositAmount == 0) {
             vm.prank(owner);
-            vm.expectRevert(Overload.Zero.selector);
+            vm.expectRevert(EOverload.Zero.selector);
             overload.deposit(owner, address(token), depositAmount);
         } else {
             vm.prank(owner);
@@ -75,7 +76,7 @@ contract OverloadFuzzTest is Test {
 
         if (withdrawAmount == 0) {
             vm.prank(owner);
-            vm.expectRevert(Overload.Zero.selector);
+            vm.expectRevert(EOverload.Zero.selector);
             overload.withdraw(owner, address(token), withdrawAmount, owner);
         } else if (withdrawAmount > depositAmount) {
             vm.prank(owner);
@@ -84,7 +85,7 @@ contract OverloadFuzzTest is Test {
         } else {
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit Overload.Withdraw(owner, owner, address(token), withdrawAmount, recipient);
+            emit EOverload.Withdraw(owner, owner, address(token), withdrawAmount, recipient);
             assertTrue(overload.withdraw(owner, address(token), withdrawAmount, recipient));
             
             assertEq(overload.balanceOf(owner, address(token).convertToId()), depositAmount - withdrawAmount);
@@ -113,7 +114,7 @@ contract OverloadFuzzTest is Test {
 
         if (amount == 0) {
             vm.prank(owner);
-            vm.expectRevert(Overload.Zero.selector);
+            vm.expectRevert(EOverload.Zero.selector);
             overload.delegate(key, amount, data, strict);
         } else {
             // Deposit
@@ -125,7 +126,7 @@ contract OverloadFuzzTest is Test {
             // Delegate
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit Overload.Delegate(key, amount, data, strict);
+            emit EOverload.Delegate(key, amount, data, strict);
             assertTrue(overload.delegate(key, amount, data, strict));
 
             assertEq(overload.getDelegationsLength(owner, address(token)), 1);

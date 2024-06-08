@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
+import {EOverload} from "../src/interfaces/EOverload.sol";
 import {Delegation, DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
 import {Undelegation, UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
@@ -225,7 +226,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Deposit(address(0xBEEF), address(0xBEEF), address(token), 100);
+        emit EOverload.Deposit(address(0xBEEF), address(0xBEEF), address(token), 100);
         overload.deposit(address(0xBEEF), address(token), 100);
 
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 100);
@@ -237,7 +238,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Deposit(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000);
+        emit EOverload.Deposit(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000);
         overload.deposit(address(0xBEEF), address(tokenFee), 10_000);
 
         assertEq(overload.balanceOf(address(0xBEEF), address(tokenFee).convertToId()), 9_000);
@@ -257,7 +258,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Withdraw(address(0xBEEF), address(0xBEEF), address(token), 100, address(0xBEEF));
+        emit EOverload.Withdraw(address(0xBEEF), address(0xBEEF), address(token), 100, address(0xBEEF));
         overload.withdraw(address(0xBEEF), address(token), 100, address(0xBEEF));
 
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
@@ -272,7 +273,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Withdraw(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000, address(0xBEEF));
+        emit EOverload.Withdraw(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000, address(0xBEEF));
         overload.withdraw(address(0xBEEF), address(tokenFee), 9_000, address(0xBEEF));
 
         assertEq(overload.balanceOf(address(0xBEEF), address(tokenFee).convertToId()), 0);
@@ -329,7 +330,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Delegate(key, 50, "", false);
+        emit EOverload.Delegate(key, 50, "", false);
         bool success = overload.delegate(key, 50, "", false);
         assertEq(success, true);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
@@ -355,7 +356,7 @@ contract OverloadTest is Test {
         // first 50
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Delegate(key, 50, "", false);
+        emit EOverload.Delegate(key, 50, "", false);
         assertTrue(overload.delegate(key, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
@@ -367,7 +368,7 @@ contract OverloadTest is Test {
         // second 50, total 100
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Delegate(key, 50, "", false);
+        emit EOverload.Delegate(key, 50, "", false);
         assertTrue(overload.delegate(key, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
@@ -419,7 +420,7 @@ contract OverloadTest is Test {
         delegate(tokenB, address(0xBEEF), address(0xF), address(0x1), 50, true);
 
         // Should overflow
-        vm.expectRevert(Overload.Overflow.selector);
+        vm.expectRevert(EOverload.Overflow.selector);
         delegate(tokenB, address(0xBEEF), address(0xF), address(0x1), 1, true);
 
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(tokenA)), 6);
@@ -475,7 +476,7 @@ contract OverloadTest is Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Delegate(key, 100, abi.encodePacked(uint256(42)), true);
+        emit EOverload.Delegate(key, 100, abi.encodePacked(uint256(42)), true);
         overload.delegate(key, 100, abi.encodePacked(uint256(42)), true);
     }
 
@@ -492,7 +493,7 @@ contract OverloadTest is Test {
     function test_fail_delegate_overflow() public {
         deposit(address(0xBEEF), 100);
 
-        vm.expectRevert(Overload.Overflow.selector);
+        vm.expectRevert(EOverload.Overflow.selector);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 101, true);
     }
 
@@ -503,7 +504,7 @@ contract OverloadTest is Test {
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
 
-        vm.expectRevert(Overload.Overflow.selector);
+        vm.expectRevert(EOverload.Overflow.selector);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
     }
 
@@ -535,7 +536,7 @@ contract OverloadTest is Test {
             delegate(address(0xBEEF), address(uint160(i)), address(uint160(i)), 1, true);
         }
 
-        vm.expectRevert(Overload.MaxDelegationsReached.selector);
+        vm.expectRevert(EOverload.MaxDelegationsReached.selector);
         delegate(address(0xBEEF), address(uint160(123)), address(uint160(123)), 1, true);
     }
 
@@ -558,7 +559,7 @@ contract OverloadTest is Test {
         deposit(address(0xBEEF), 1000);
 
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
-        vm.expectRevert(Overload.Zero.selector);
+        vm.expectRevert(EOverload.Zero.selector);
         redelegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), address(0xFFFF));
     }
 
@@ -589,10 +590,10 @@ contract OverloadTest is Test {
         toKey.validator = address(0xFFFF);
 
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
+        vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
         overload.redelegate(fromKey, toKey, "", true);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
+        vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
         overload.redelegate(fromKey, toKey, "", false);
 
         // Case `token` mismatch
@@ -606,10 +607,10 @@ contract OverloadTest is Test {
         toKey.validator = address(0xFFFF);
 
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(token), address(tokenA)));
+        vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(token), address(tokenA)));
         overload.redelegate(fromKey, toKey, "", true);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(token), address(tokenA)));
+        vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(token), address(tokenA)));
         overload.redelegate(fromKey, toKey, "", false);
 
         // Case `consensus` mismatch
@@ -623,10 +624,10 @@ contract OverloadTest is Test {
         toKey.validator = address(0xFFFF);
 
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
+        vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
         overload.redelegate(fromKey, toKey, "", true);
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(Overload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
+        vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
         overload.redelegate(fromKey, toKey, "", false);
     }
 
@@ -653,7 +654,7 @@ contract OverloadTest is Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Undelegating(key, 25, "", true);
+        emit EOverload.Undelegating(key, 25, "", true);
         (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, 25, "", true));
         assertTrue(success);
         assertEq(ukey.owner, address(0));
@@ -787,7 +788,7 @@ contract OverloadTest is Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xBEEF));
-        vm.expectRevert(Overload.NotDelegated.selector);
+        vm.expectRevert(EOverload.NotDelegated.selector);
         overload.undelegating(key, 1, "", true);
     }
 
@@ -802,11 +803,11 @@ contract OverloadTest is Test {
     function test_fail_undelegating_overflow() public {
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
-        vm.expectRevert(Overload.Overflow.selector);
+        vm.expectRevert(EOverload.Overflow.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 101, true);
 
         setUndelegatingDelay(address(0xCCCC), 500);
-        vm.expectRevert(Overload.Overflow.selector);
+        vm.expectRevert(EOverload.Overflow.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 101, true);
     }
 
@@ -819,12 +820,12 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xCCCC));
         overload.jail(address(0xFFFF), 1 days);
-        vm.expectRevert(Overload.Jailed.selector);
+        vm.expectRevert(EOverload.Jailed.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
 
         // After jailtime passed
         vm.warp(1_000_000 + 1 days - 1);
-        vm.expectRevert(Overload.Jailed.selector);
+        vm.expectRevert(EOverload.Jailed.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
         vm.warp(1_000_000 + 1 days);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
@@ -841,12 +842,12 @@ contract OverloadTest is Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xABCD));
-        vm.expectRevert(Overload.Unauthorized.selector);
+        vm.expectRevert(EOverload.Unauthorized.selector);
         overload.undelegating(key, 50, "", true);
     }
 
     function test_fail_undelegating_zero() public {
-        vm.expectRevert(Overload.Zero.selector);
+        vm.expectRevert(EOverload.Zero.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 0, true);
     }
 
@@ -859,7 +860,7 @@ contract OverloadTest is Test {
             undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 10, true);
         }
 
-        vm.expectRevert(Overload.MaxUndelegationsReached.selector);
+        vm.expectRevert(EOverload.MaxUndelegationsReached.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 10, true);
     }
 
@@ -906,7 +907,7 @@ contract OverloadTest is Test {
         (, UndelegationKey memory ukey, ) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
 
         vm.warp(500);
-        vm.expectRevert(Overload.NonMatureUndelegation.selector);
+        vm.expectRevert(EOverload.NonMatureUndelegation.selector);
         undelegate(address(0xBEEF), ukey, int256(-1), "", true);
     }
 
@@ -956,14 +957,14 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xCCCC));
         vm.expectEmit(true, true, true, true);
-        emit Overload.Jail(address(0xCCCC), address(0xFFFF), 1 hours, block.timestamp + 1 hours);
+        emit EOverload.Jail(address(0xCCCC), address(0xFFFF), 1 hours, block.timestamp + 1 hours);
         overload.jail(address(0xFFFF), 1 hours);
-        vm.expectRevert(Overload.Jailed.selector);
+        vm.expectRevert(EOverload.Jailed.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
 
         // After jailtime passed
         vm.warp(1_000_000 + 1 hours - 1);
-        vm.expectRevert(Overload.Jailed.selector);
+        vm.expectRevert(EOverload.Jailed.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
         vm.warp(1_000_000 + 1 hours);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
@@ -1002,7 +1003,7 @@ contract OverloadTest is Test {
         vm.warp(1_000_000);
 
         vm.prank(address(0xCCCC));
-        vm.expectRevert(Overload.ValueExceedsMaxJailtime.selector);
+        vm.expectRevert(EOverload.ValueExceedsMaxJailtime.selector);
         overload.jail(address(0xFFFF), 7 days + 1);
     }
 
@@ -1015,19 +1016,19 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xCCCC));
         overload.jail(address(0xFFFF), 1 hours);
-        vm.expectRevert(Overload.Jailed.selector);
+        vm.expectRevert(EOverload.Jailed.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
 
         // After jailtime passed
         vm.warp(block.timestamp + 1 hours - 1);
-        vm.expectRevert(Overload.Jailed.selector);
+        vm.expectRevert(EOverload.Jailed.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
         vm.warp(block.timestamp + 1 hours);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
 
         // Jail should fail as it's on cooldown
         vm.prank(address(0xCCCC));
-        vm.expectRevert(Overload.JailOnCooldown.selector);
+        vm.expectRevert(EOverload.JailOnCooldown.selector);
         overload.jail(address(0xFFFF), 1 hours);
 
         vm.warp(block.timestamp + 23 hours);

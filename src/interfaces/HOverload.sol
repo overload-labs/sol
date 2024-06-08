@@ -4,7 +4,7 @@ pragma solidity >=0.8.0;
 import {Delegation, DelegationKey} from "../libraries/types/Delegation.sol";
 import {Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol";
 
-interface IHOverload {
+interface HOverload {
     /*//////////////////////////////////////////////////////////////
                                 DELEGATE
     //////////////////////////////////////////////////////////////*/

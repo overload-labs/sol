@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IHOverload} from "../../../src/interfaces/IHOverload.sol";
+import {HOverload} from "../../../src/interfaces/HOverload.sol";
 import {Delegation, DelegationKey} from "../../../src/libraries/types/Delegation.sol";
 import {Overload} from "../../../src/Overload.sol";
 
@@ -74,7 +74,7 @@ contract ConsensusMirror {
         validators[key.validator][key.token].increase(delta);
         pools[key.token].increase(delta);
 
-        return IHOverload.beforeDelegate.selector;
+        return HOverload.beforeDelegate.selector;
     }
 
     function beforeUndelegating(address, DelegationKey memory key, uint256 delta, bytes calldata, bool, uint256) external returns (bytes4) {
@@ -84,14 +84,14 @@ contract ConsensusMirror {
         validators[key.validator][key.token].decrease(delta);
         pools[key.token].decrease(delta);
 
-        return IHOverload.beforeUndelegating.selector;
+        return HOverload.beforeUndelegating.selector;
     }
 
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
-            interfaceId == IHOverload.beforeDelegate.selector ||
-            interfaceId == IHOverload.beforeUndelegating.selector;
+            interfaceId == HOverload.beforeDelegate.selector ||
+            interfaceId == HOverload.beforeUndelegating.selector;
     }
 
     function test() public {}

@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {IHOverload} from "../interfaces/IHOverload.sol";
+import {HOverload} from "../interfaces/HOverload.sol";
 import {HookCallLib} from "../libraries/HookCallLib.sol";
 import {DelegationLib, Delegation, DelegationKey} from "../libraries/types/Delegation.sol";
 import {UndelegationLib, Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol";
 
-/// @notice The implementation of the Overload hook calls contract.
-/// @dev This is the logic for how `Overload.sol` calls external contracts that implement the hook callbacks.
+/// @title Overload Calls
+/// @notice The implementation of the Overload calls contract.
+/// @dev The logic for how the `Overload.sol` calls contracts that implement the hooks from `HOverload.sol`.
 abstract contract COverload {
     /*//////////////////////////////////////////////////////////////
                                 DELEGATE
@@ -23,11 +24,11 @@ abstract contract COverload {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.beforeDelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeDelegate, (msg.sender, key, delta, data, strict)),
+                abi.encodeCall(HOverload.beforeDelegate, (msg.sender, key, delta, data, strict)),
                 strict
             );
         }
@@ -43,11 +44,11 @@ abstract contract COverload {
         Delegation memory delegation,
         uint256 index
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.afterDelegate.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.afterDelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, data, strict, delegation, index)),
+                abi.encodeCall(HOverload.afterDelegate, (msg.sender, key, delta, data, strict, delegation, index)),
                 strict
             );
         }
@@ -65,11 +66,11 @@ abstract contract COverload {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.beforeRedelegate.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.beforeRedelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeRedelegate, (msg.sender, from, to, data, strict)),
+                abi.encodeCall(HOverload.beforeRedelegate, (msg.sender, from, to, data, strict)),
                 strict
             );
         }
@@ -83,11 +84,11 @@ abstract contract COverload {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.afterRedelegate.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.afterRedelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterRedelegate, (msg.sender, from, to, data, strict)),
+                abi.encodeCall(HOverload.afterRedelegate, (msg.sender, from, to, data, strict)),
                 strict
             );
         }
@@ -106,11 +107,11 @@ abstract contract COverload {
         bool strict,
         uint256 index
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.beforeUndelegating.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.beforeUndelegating.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeUndelegating, (msg.sender, key, delta, data, strict, index)),
+                abi.encodeCall(HOverload.beforeUndelegating, (msg.sender, key, delta, data, strict, index)),
                 strict
             );
         }
@@ -126,11 +127,11 @@ abstract contract COverload {
         UndelegationKey memory ukey,
         uint256 index
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegating.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.afterUndelegating.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, data, strict, ukey, index)),
+                abi.encodeCall(HOverload.afterUndelegating, (msg.sender, key, delta, data, strict, ukey, index)),
                 strict
             );
         }
@@ -149,11 +150,11 @@ abstract contract COverload {
         bool strict,
         uint256 index
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.beforeDelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeUndelegate, (msg.sender, key, position, data, strict, index)),
+                abi.encodeCall(HOverload.beforeUndelegate, (msg.sender, key, position, data, strict, index)),
                 strict
             );
         }
@@ -167,11 +168,11 @@ abstract contract COverload {
         bytes calldata data,
         bool strict
     ) internal {
-        if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegate.selector)) {
+        if (ERC165Checker.supportsInterface(target, HOverload.afterUndelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterUndelegate, (msg.sender, key, position, data, strict)),
+                abi.encodeCall(HOverload.afterUndelegate, (msg.sender, key, position, data, strict)),
                 strict
             );
         }
