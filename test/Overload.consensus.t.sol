@@ -9,6 +9,7 @@ import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
 import {
+    ConsensusHookParametersMock,
     ConsensusRevertDelegateMock,
     ConsensusRevertRedelegateMock,
     ConsensusRevertUndelegatingMock,
@@ -27,6 +28,7 @@ contract OverloadConsensusTest is Test {
 
     Overload public overload;
     ERC20Mock public token;
+    ConsensusHookParametersMock public consensusHookParametersMock;
     ConsensusRevertDelegateMock public consensusRevert;
     ConsensusRevertRedelegateMock public consensusRevertRedelegateMock;
     ConsensusRevertUndelegatingMock public consensusRevertUndelegating;
@@ -36,6 +38,7 @@ contract OverloadConsensusTest is Test {
     function setUp() public {
         overload = new Overload();
         token = new ERC20Mock("Test", "TEST", 18);
+        consensusHookParametersMock = new ConsensusHookParametersMock(address(overload), address(token));
         consensusRevert = new ConsensusRevertDelegateMock(address(overload));
         consensusRevertRedelegateMock = new ConsensusRevertRedelegateMock(address(overload));
         consensusRevertUndelegating = new ConsensusRevertUndelegatingMock(address(overload));
@@ -142,6 +145,51 @@ contract OverloadConsensusTest is Test {
     }
 
     /*//////////////////////////////////////////////////////////////
+                       CONSENSUS HOOK PARAMETERS
+    //////////////////////////////////////////////////////////////*/
+
+    function test_hookParameters() public {
+        setUndelegatingDelay(address(consensusHookParametersMock), 500);
+        deposit(address(0xBEEF), 100);
+
+        // Base key
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(consensusHookParametersMock),
+            validator: address(0xFFFF)
+        });
+        // To key
+        DelegationKey memory toKey = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(consensusHookParametersMock),
+            validator: address(0xEEEE)
+        });
+
+        // Delegate
+        vm.prank(address(0xBEEF));
+        overload.delegate(key, 100, hex"42", true);
+
+        // Redelegate
+        vm.prank(address(0xBEEF));
+        overload.redelegate(key, toKey, hex"42", true);
+
+        // Undelegating
+        vm.prank(address(0xBEEF));
+        (, UndelegationKey memory ukey, uint256 index) = overload.undelegating(toKey, 100, hex"42", true);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
+
+        // Undelegate
+        vm.warp(block.timestamp + 500);
+        vm.prank(address(0xBEEF));
+        overload.undelegate(ukey, int256(-1), hex"42", true);
+        assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 100);
+        assertEq(overload.bonded(address(0xBEEF), address(token)), 0);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                             CONSENSUS REVERT
     //////////////////////////////////////////////////////////////*/
 
@@ -152,7 +200,7 @@ contract OverloadConsensusTest is Test {
             owner: address(0xBEEF),
             token: address(token),
             consensus: address(consensusRevert),
-            validator: address(0xCCCC)
+            validator: address(0xFFFF)
         });
 
         // Strict true reverts
@@ -166,7 +214,7 @@ contract OverloadConsensusTest is Test {
         overload.delegate(key, 50, "", false);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(consensusRevert));
-        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xCCCC));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xFFFF));
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).amount, 50);
     }
 

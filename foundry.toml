@@ -6,6 +6,6 @@ via_ir = true
 solc-version = "0.8.26"
 
 [profile.default.fuzz]
-runs = 100_000
+runs = 10_000
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

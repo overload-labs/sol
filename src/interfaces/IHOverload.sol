@@ -17,9 +17,9 @@ interface IHOverload {
                                REDELEGATE
     //////////////////////////////////////////////////////////////*/
 
-    function beforeRedelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data) external returns (bytes4);
+    function beforeRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data) external returns (bytes4);
 
-    function afterRedelegate(address sender, DelegationKey memory key, uint256 delta, Delegation memory delegation, bytes calldata data) external returns (bytes4);
+    function afterRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data) external returns (bytes4);
 
     /*//////////////////////////////////////////////////////////////
                               UNDELEGATING
@@ -27,13 +27,13 @@ interface IHOverload {
 
     function beforeUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data) external returns (bytes4);
 
-    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, Delegation memory delegation, bytes calldata data) external returns (bytes4);
+    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, UndelegationKey memory ukey, bytes calldata data) external returns (bytes4);
 
     /*//////////////////////////////////////////////////////////////
                                UNDELEGATE
     //////////////////////////////////////////////////////////////*/
 
-    function beforeUndelegate(address sender, UndelegationKey memory key, bytes calldata data) external returns (bytes4);
+    function beforeUndelegate(address sender, UndelegationKey memory key, int256 position, bytes calldata data) external returns (bytes4);
 
-    function afterUndelegate(address sender, UndelegationKey memory key, bytes calldata data) external returns (bytes4);
+    function afterUndelegate(address sender, UndelegationKey memory key, int256 position, bytes calldata data) external returns (bytes4);
 }
