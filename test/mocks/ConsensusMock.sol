@@ -14,7 +14,7 @@ contract ConsensusHookParametersMock is IHOverload {
         token = token_;
     }
 
-    function beforeDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data) public view returns (bytes4) {
+    function beforeDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
@@ -22,11 +22,12 @@ contract ConsensusHookParametersMock is IHOverload {
         require(key.validator == address(0xFFFF));
         require(delta == 100);
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
 
         return IHOverload.beforeDelegate.selector;
     }
 
-    function afterDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, Delegation memory delegation, uint256 index) public view returns (bytes4) {
+    function afterDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, Delegation memory delegation, uint256 index) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
@@ -34,6 +35,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(key.validator == address(0xFFFF));
         require(delta == 100);
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
         require(delegation.consensus == address(this));
         require(delegation.validator == address(0xFFFF));
         require(delegation.amount == 100);
@@ -42,7 +44,7 @@ contract ConsensusHookParametersMock is IHOverload {
         return IHOverload.afterDelegate.selector;
     }
 
-    function beforeRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data) public view returns (bytes4) {
+    function beforeRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data, bool strict) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(from.owner == address(0xBEEF));
         require(from.token == address(token));
@@ -53,11 +55,12 @@ contract ConsensusHookParametersMock is IHOverload {
         require(to.consensus == address(this));
         require(to.validator == address(0xEEEE));
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
 
         return IHOverload.beforeRedelegate.selector;
     }
 
-    function afterRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data) public view returns (bytes4) {
+    function afterRedelegate(address sender, DelegationKey memory from, DelegationKey memory to, bytes calldata data, bool strict) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(from.owner == address(0xBEEF));
         require(from.token == address(token));
@@ -68,11 +71,12 @@ contract ConsensusHookParametersMock is IHOverload {
         require(to.consensus == address(this));
         require(to.validator == address(0xEEEE));
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
 
         return IHOverload.afterRedelegate.selector;
     }
 
-    function beforeUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, uint256 index) public view returns (bytes4) {
+    function beforeUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, uint256 index) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
@@ -80,12 +84,13 @@ contract ConsensusHookParametersMock is IHOverload {
         require(key.validator == address(0xEEEE));
         require(delta == 100);
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
         require(index == 0);
 
         return IHOverload.beforeUndelegating.selector;
     }
 
-    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, UndelegationKey memory ukey, uint256 index) public view returns (bytes4) {
+    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, UndelegationKey memory ukey, uint256 index) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
@@ -93,6 +98,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(key.validator == address(0xEEEE));
         require(delta == 100);
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
         require(ukey.owner == address(0xBEEF));
         require(ukey.token == address(token));
         require(ukey.consensus == address(this));
@@ -104,7 +110,7 @@ contract ConsensusHookParametersMock is IHOverload {
         return IHOverload.afterUndelegating.selector;
     }
 
-    function beforeUndelegate(address sender, UndelegationKey memory ukey, int256 position, bytes calldata data, uint256 index) public view returns (bytes4) {
+    function beforeUndelegate(address sender, UndelegationKey memory ukey, int256 position, bytes calldata data, bool strict, uint256 index) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(ukey.owner == address(0xBEEF));
         require(ukey.token == address(token));
@@ -114,12 +120,13 @@ contract ConsensusHookParametersMock is IHOverload {
         require(ukey.maturity == 501);
         require(position == -1);
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
         require(index == 0);
 
         return IHOverload.beforeUndelegate.selector;
     }
 
-    function afterUndelegate(address sender, UndelegationKey memory ukey, int256 position, bytes calldata data) public view returns (bytes4) {
+    function afterUndelegate(address sender, UndelegationKey memory ukey, int256 position, bytes calldata data, bool strict) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(ukey.owner == address(0xBEEF));
         require(ukey.token == address(token));
@@ -129,6 +136,7 @@ contract ConsensusHookParametersMock is IHOverload {
         require(ukey.maturity == 501);
         require(position == -1);
         require(keccak256(data) == keccak256(hex"42"));
+        require(strict == true);
 
         return IHOverload.afterUndelegate.selector;
     }
@@ -156,25 +164,25 @@ contract ConsensusRevertDelegateMock is IHOverload {
         overload = overload_;
     }
 
-    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata) external pure returns (bytes4) {
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {
         revert();
     }
 
-    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, Delegation memory, uint256) external pure returns (bytes4) {
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {
         revert();
     }
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
 
-    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, uint256) external pure returns (bytes4) {}
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
 
-    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, UndelegationKey memory, uint256) external pure returns (bytes4) {}
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {}
 
-    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, uint256) external pure returns (bytes4) {}
+    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
 
-    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata) external pure returns (bytes4) {}
+    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool) external pure returns (bytes4) {}
 
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
@@ -193,25 +201,25 @@ contract ConsensusRevertRedelegateMock is IHOverload {
         overload = overload_;
     }
 
-    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata) external pure returns (bytes4) {}
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {}
 
-    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, Delegation memory, uint256) external pure returns (bytes4) {}
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {
         revert();
     }
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {
         revert();
     }
 
-    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, uint256) external pure returns (bytes4) {}
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
 
-    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, UndelegationKey memory, uint256) external pure returns (bytes4) {}
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {}
 
-    function beforeUndelegate(address, UndelegationKey memory, int256 position, bytes calldata, uint256) external pure returns (bytes4) {}
+    function beforeUndelegate(address, UndelegationKey memory, int256 position, bytes calldata, bool, uint256) external pure returns (bytes4) {}
 
-    function afterUndelegate(address, UndelegationKey memory, int256 position, bytes calldata) external pure returns (bytes4) {}
+    function afterUndelegate(address, UndelegationKey memory, int256 position, bytes calldata, bool) external pure returns (bytes4) {}
 
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
@@ -230,25 +238,25 @@ contract ConsensusRevertUndelegatingMock is IHOverload {
         overload = overload_;
     }
 
-    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata) external pure returns (bytes4) {}
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {}
 
-    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, Delegation memory, uint256) external pure returns (bytes4) {}
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
 
-    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, uint256) external pure returns (bytes4) {
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {
         revert();
     }
 
-    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, UndelegationKey memory, uint256) external pure returns (bytes4) {
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {
         revert();
     }
 
-    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, uint256) external pure returns (bytes4) {}
+    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
 
-    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata) external pure returns (bytes4) {}
+    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool) external pure returns (bytes4) {}
 
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
@@ -267,23 +275,23 @@ contract ConsensusRevertUndelegateMock is IHOverload {
         overload = overload_;
     }
 
-    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata) external pure returns (bytes4) {}
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {}
 
-    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, Delegation memory, uint256) external pure returns (bytes4) {}
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
 
-    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, uint256) external pure returns (bytes4) {}
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
 
-    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, UndelegationKey memory, uint256) external pure returns (bytes4) {}
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {}
 
-    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, uint256) external pure returns (bytes4) {
+    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool, uint256) external pure returns (bytes4) {
         revert();
     }
 
-    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata) external pure returns (bytes4) {
+    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool) external pure returns (bytes4) {
         revert();
     }
 

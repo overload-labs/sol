@@ -27,7 +27,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeDelegate, (msg.sender, key, delta, data)),
+                abi.encodeCall(IHOverload.beforeDelegate, (msg.sender, key, delta, data, strict)),
                 strict
             );
         }
@@ -47,7 +47,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, data, delegation, index)),
+                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, data, strict, delegation, index)),
                 strict
             );
         }
@@ -69,7 +69,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeRedelegate, (msg.sender, from, to, data)),
+                abi.encodeCall(IHOverload.beforeRedelegate, (msg.sender, from, to, data, strict)),
                 strict
             );
         }
@@ -87,7 +87,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterRedelegate, (msg.sender, from, to, data)),
+                abi.encodeCall(IHOverload.afterRedelegate, (msg.sender, from, to, data, strict)),
                 strict
             );
         }
@@ -110,7 +110,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeUndelegating, (msg.sender, key, delta, data, index)),
+                abi.encodeCall(IHOverload.beforeUndelegating, (msg.sender, key, delta, data, strict, index)),
                 strict
             );
         }
@@ -130,7 +130,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, data, ukey, index)),
+                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, data, strict, ukey, index)),
                 strict
             );
         }
@@ -153,7 +153,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeUndelegate, (msg.sender, key, position, data, index)),
+                abi.encodeCall(IHOverload.beforeUndelegate, (msg.sender, key, position, data, strict, index)),
                 strict
             );
         }
@@ -171,7 +171,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterUndelegate, (msg.sender, key, position, data)),
+                abi.encodeCall(IHOverload.afterUndelegate, (msg.sender, key, position, data, strict)),
                 strict
             );
         }
