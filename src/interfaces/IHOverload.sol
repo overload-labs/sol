@@ -27,7 +27,7 @@ interface IHOverload {
 
     function beforeUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data) external returns (bytes4);
 
-    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, UndelegationKey memory ukey, bytes calldata data) external returns (bytes4);
+    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, UndelegationKey memory ukey, uint256 index, bytes calldata data) external returns (bytes4);
 
     /*//////////////////////////////////////////////////////////////
                                UNDELEGATE

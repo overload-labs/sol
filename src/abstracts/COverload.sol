@@ -120,6 +120,7 @@ abstract contract COverload {
         DelegationKey memory key,
         uint256 delta,
         UndelegationKey memory ukey,
+        uint256 index,
         bytes calldata data,
         bool strict
     ) internal {
@@ -127,7 +128,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, ukey, data)),
+                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, ukey, index, data)),
                 strict
             );
         }

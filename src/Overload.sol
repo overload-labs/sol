@@ -314,7 +314,7 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         }
 
         // Non-strict hook call
-        _afterUndelegatingHook(key.consensus, gasBudget, key, delta, undelegationKey, data, strict);
+        _afterUndelegatingHook(key.consensus, gasBudget, key, delta, undelegationKey, insertIndex, data, strict);
 
         emit Undelegating(key, delta, data, strict);
 
