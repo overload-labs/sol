@@ -203,29 +203,31 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         uint256 balance = balanceOf[key.owner][key.token.convertToId()] + bonded[key.owner][key.token];
 
         Delegation memory delegation;
+        uint256 index;
         if (delegated[key.owner][key.token][key.consensus]) {
-            int256 index;
+            int256 position;
 
             // Strictly get delegation
-            (delegation, index) = delegations.get(key, true);
+            (delegation, position) = delegations.get(key, true);
             require((delegation.amount + delta) <= balance, Overflow());
 
             // Increase delegation amount
             _bondTokens(key.owner, key.token, delegation.amount + delta);
-            delegation = delegations.increase(key.owner, key.token, index.u256(), delta);
+            index = position.u256();
+            delegation = delegations.increase(key.owner, key.token, index, delta);
         } else {
             require(delta <= balance, Overflow());
 
             // Create delegation
             _bondTokens(key.owner, key.token, delta);
-            delegation = delegations.push(key, delta);
+            (delegation, index) = delegations.add(key, delta);
 
             // Mark that delegation exists
             delegated[key.owner][key.token][key.consensus] = true;
         }
 
         // After hook call
-        _afterDelegateHook(key.consensus, gasBudget, key, delta, data, strict, delegation);
+        _afterDelegateHook(key.consensus, gasBudget, key, delta, data, strict, delegation, index);
 
         emit Delegate(key, delta, data, strict);
 

@@ -8,6 +8,23 @@
 
 This repository contains the core contract, `Overload.sol`, for Overload. The AVSs that build on top of `Overload.sol` is expected to implement the `IHOverload.sol` hook interace.
 
+## Usage
+
+This repository is developed with [**Foundry**](https://github.com/gakonst/foundry) framework.  
+To install, build or test with Foundry:
+
+```sh
+$ forge install
+```
+
+```sh
+$ forge build
+```
+
+```sh
+$ forge test
+```
+
 ## Contracts
 
 ```ml
@@ -161,24 +178,6 @@ The `strict` variable prevents consensus contracts from `revert`:ing `undelegati
 
 Hooks in Overload differ from e.g. Uniswap V4. Instead of having hook permissions included in the addresses, we instead utilize the commonly used ERC-165 standard instead. If a contract returns true for a hook method interface from `IHOverload.sol`, then `Overload.sol` will try to call the hook on the target contract.
 
-## Install
-
-```sh
-$ forge install
-```
-
-## Build
-
-```sh
-$ forge build
-```
-
-## Test
-
-```sh
-$ forge test
-```
-
 ## Coverage
 
 Genenrate a coverage summary:
@@ -204,7 +203,7 @@ $ forge coverage --ir-minimum
 | Total                                | 85.23% (225/264) | 84.23% (267/317) | 38.96% (60/154) | 82.46% (47/57) |
 ```
 
-Generate a coverage report with `lcov`:
+Generate a `lcov` coverage report with:
 
 ```sh
 $ brew install lcov

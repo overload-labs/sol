@@ -40,13 +40,14 @@ abstract contract COverload {
         uint256 delta,
         bytes calldata data,
         bool strict,
-        Delegation memory delegation
+        Delegation memory delegation,
+        uint256 index
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterDelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, data, delegation)),
+                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, data, delegation, index)),
                 strict
             );
         }

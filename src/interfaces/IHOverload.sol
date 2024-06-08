@@ -11,7 +11,7 @@ interface IHOverload {
 
     function beforeDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data) external returns (bytes4);
 
-    function afterDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, Delegation memory delegation) external returns (bytes4);
+    function afterDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, Delegation memory delegation, uint256 index) external returns (bytes4);
 
     /*//////////////////////////////////////////////////////////////
                                REDELEGATE

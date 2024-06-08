@@ -112,11 +112,12 @@ library DelegationLib {
         return map[owner][token][index];
     }
 
-    function push(
+    function add(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         DelegationKey memory key,
         uint256 amount
-    ) internal returns (Delegation memory delegation) {
+    ) internal returns (Delegation memory delegation, uint256 index) {
+        index = map[key.owner][key.token].length;
         map[key.owner][key.token].push(
             delegation = Delegation({
                 consensus: key.consensus,
