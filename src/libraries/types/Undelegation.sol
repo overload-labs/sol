@@ -63,7 +63,7 @@ library UndelegationLib {
                 key.amount == undelegation.amount &&
                 key.maturity == undelegation.maturity
             ) {
-                return int256(i);
+                return CastLib.i256(i);
             }
         }
 

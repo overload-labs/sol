@@ -55,7 +55,7 @@ library DelegationLib {
             Delegation memory delegation = delegations[i];
 
             if (key.consensus == delegation.consensus && key.validator == delegation.validator) {
-                return int256(i);
+                return CastLib.i256(i);
             }
         }
 
