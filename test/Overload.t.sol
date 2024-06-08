@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
-import {DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
-import {UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
+import {Delegation, DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
+import {Undelegation, UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
@@ -132,6 +132,88 @@ contract OverloadTest is Test {
     }
 
     /*//////////////////////////////////////////////////////////////
+                                 VIEWS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * Delegation
+     */
+
+    function test_getDelegations() public {
+        deposit(address(0xBEEF), 1e18);
+
+        for (uint256 i = 1; i < 256 + 1; i++) {
+            delegate(address(0xBEEF), address(uint160(i)), address(uint160(i)), i, true);
+        }
+
+        Delegation[] memory delegations = overload.getDelegations(address(0xBEEF), address(token));
+        assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 256);
+
+        for (uint256 i = 0; i < delegations.length; i++) {
+            assertEq(overload.getDelegation(address(0xBEEF), address(token), i).consensus, address(uint160(i + 1)));
+            assertEq(overload.getDelegation(address(0xBEEF), address(token), i).validator, address(uint160(i + 1)));
+            assertEq(overload.getDelegation(address(0xBEEF), address(token), i).amount, i + 1);
+        }
+    }
+
+    function test_getDelegation_empty() public view {
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xCCCC),
+            validator: address(0xFFFF)
+        });
+
+        Delegation memory delegation = overload.getDelegation(key);
+        assertEq(delegation.consensus, address(0));
+        assertEq(delegation.validator, address(0));
+        assertEq(delegation.amount, 0);
+    }
+
+    /**
+     * Undelegation
+     */
+
+    function test_getUndelegations() public {
+        setUndelegatingDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 1e18);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1e18, true);
+
+        for (uint256 i = 0; i < 32; i++) {
+            undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), i + 1, true);
+        }
+
+        Undelegation[] memory undelegations = overload.getUndelegations(address(0xBEEF), address(token));
+        assertEq(overload.getUndelegationLength(address(0xBEEF), address(token)), 32);
+
+        for (uint256 i = 0; i < undelegations.length; i++) {
+            assertEq(overload.getUndelegation(address(0xBEEF), address(token), i).consensus, address(0xCCCC));
+            assertEq(overload.getUndelegation(address(0xBEEF), address(token), i).validator, address(0xFFFF));
+            assertEq(overload.getUndelegation(address(0xBEEF), address(token), i).amount, i + 1);
+            assertEq(overload.getUndelegation(address(0xBEEF), address(token), i).maturity, 501);
+        }
+    }
+
+    function test_getUndelegation_zero() public view {
+        assertEq(overload.getUndelegation(address(0xBEEF), address(token), 100).consensus, address(0));
+        assertEq(overload.getUndelegation(address(0xBEEF), address(token), 100).validator, address(0));
+        assertEq(overload.getUndelegation(address(0xBEEF), address(token), 100).amount, 0);
+        assertEq(overload.getUndelegation(address(0xBEEF), address(token), 100).maturity, 0);
+
+        UndelegationKey memory ukey = UndelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xCCCC),
+            validator: address(0xFFFF),
+            amount: 100,
+            maturity: 1
+        });
+        assertEq(overload.getUndelegation(ukey).consensus, address(0));
+        assertEq(overload.getUndelegation(ukey).validator, address(0));
+        assertEq(overload.getUndelegation(ukey).amount, 0);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                                 DEPOSIT
     //////////////////////////////////////////////////////////////*/
 
@@ -197,6 +279,40 @@ contract OverloadTest is Test {
         assertEq(tokenFee.balanceOf(address(0xBEEF)), 1e18 - 2_000);
     }
 
+    function test_withdraw_approval() public {
+        deposit(address(0xBEEF), 100);
+
+        // Approve max
+        vm.prank(address(0xBEEF));
+        overload.approve(address(0xABCD), address(token).convertToId(), type(uint256).max);
+        // Withdraw with max approval
+        vm.prank(address(0xABCD));
+        overload.withdraw(address(0xBEEF), address(token), 50, address(0xABCD));
+        assertEq(overload.allowance(address(0xBEEF), address(0xABCD), address(token).convertToId()), type(uint256).max);
+        assertEq(token.balanceOf(address(0xABCD)), 50);
+
+        // Approve non-max
+        vm.prank(address(0xBEEF));
+        overload.approve(address(0xABCD), address(token).convertToId(), 1e18);
+        // Withdraw with non-max approval
+        vm.prank(address(0xABCD));
+        overload.withdraw(address(0xBEEF), address(token), 50, address(0xABCD));
+        assertEq(overload.allowance(address(0xBEEF), address(0xABCD), address(token).convertToId()), 1e18 - 50);
+        assertEq(token.balanceOf(address(0xABCD)), 100);
+    }
+
+    function test_withdraw_operator() public {
+        deposit(address(0xBEEF), 100);
+
+        // Set operator
+        vm.prank(address(0xBEEF));
+        overload.setOperator(address(0xABCD), true);
+        // Withdraw as operator
+        vm.prank(address(0xABCD));
+        overload.withdraw(address(0xBEEF), address(token), 100, address(0xABCD));
+        assertEq(token.balanceOf(address(0xABCD)), 100);
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 DELEGATE
     //////////////////////////////////////////////////////////////*/
@@ -214,7 +330,8 @@ contract OverloadTest is Test {
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
         emit Overload.Delegate(key, 50, "", false);
-        assertTrue(overload.delegate(key, 50, "", false));
+        bool success = overload.delegate(key, 50, "", false);
+        assertEq(success, true);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xFFFF));

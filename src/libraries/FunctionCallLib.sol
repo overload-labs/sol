@@ -11,10 +11,6 @@ library FunctionCallLib {
     /// @notice Reverts when insufficent gas is left from `gasleft()` for `functionCallGas`.
     error InsufficientGas(uint256 gasLeft);
 
-    function functionCall(address target, bytes memory data, bool strict) internal returns (bool, bytes memory) {
-        return functionCallGas(target, 0, data, strict);
-    }
-
     function functionCallGas(address target, uint256 gas, bytes memory data, bool strict) internal returns (bool, bytes memory) {
         uint256 gasLeft = gasleft();
         require(gasLeft >= gas, InsufficientGas(gasLeft));

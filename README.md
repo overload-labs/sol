@@ -183,24 +183,24 @@ Hooks in Overload differ from e.g. Uniswap V4. Instead of having hook permission
 Genenrate a coverage summary:
 
 ```sh
+# When running with the `--ir-minimum` flag, some tests might fail because of differences in configuration for gas optimization.
 $ forge coverage --ir-minimum
 ```
 
 ```
-| File                                 | % Lines          | % Statements     | % Branches      | % Funcs        |
-|--------------------------------------|------------------|------------------|-----------------|----------------|
-| src/Overload.sol                     | 88.98% (113/127) | 88.81% (127/143) | 27.78% (25/90)  | 77.78% (14/18) |
-| src/abstracts/COverload.sol          | 100.00% (16/16)  | 100.00% (16/16)  | 100.00% (16/16) | 100.00% (8/8)  |
-| src/abstracts/Lock.sol               | 100.00% (3/3)    | 100.00% (3/3)    | 0.00% (0/2)     | 100.00% (1/1)  |
-| src/libraries/CastLib.sol            | 100.00% (4/4)    | 100.00% (6/6)    | 0.00% (0/4)     | 100.00% (2/2)  |
-| src/libraries/FunctionCallLib.sol    | 83.33% (10/12)   | 73.33% (11/15)   | 50.00% (5/10)   | 66.67% (2/3)   |
-| src/libraries/HookCallLib.sol        | 75.00% (6/8)     | 80.00% (8/10)    | 50.00% (2/4)    | 100.00% (1/1)  |
-| src/libraries/TokenIdLib.sol         | 33.33% (1/3)     | 33.33% (1/3)     | 0.00% (0/2)     | 50.00% (1/2)   |
-| src/libraries/types/Delegation.sol   | 93.10% (27/29)   | 92.11% (35/38)   | 87.50% (7/8)    | 100.00% (8/8)  |
-| src/libraries/types/Undelegation.sol | 89.29% (25/28)   | 86.49% (32/37)   | 35.71% (5/14)   | 83.33% (5/6)   |
-| src/tokens/ERC6909.sol               | 41.67% (10/24)   | 35.71% (10/28)   | 0.00% (0/4)     | 57.14% (4/7)   |
-| test/mocks/ConsensusMock.sol         | 100.00% (10/10)  | 100.00% (18/18)  | 100.00% (0/0)   | 100.00% (1/1)  |
-| Total                                | 85.23% (225/264) | 84.23% (267/317) | 38.96% (60/154) | 82.46% (47/57) |
+| File                                 | % Lines          | % Statements     | % Branches      | % Funcs         |
+|--------------------------------------|------------------|------------------|-----------------|-----------------|
+| src/Overload.sol                     | 96.12% (124/129) | 96.55% (140/145) | 34.44% (31/90)  | 100.00% (18/18) |
+| src/abstracts/COverload.sol          | 100.00% (16/16)  | 100.00% (16/16)  | 100.00% (16/16) | 100.00% (8/8)   |
+| src/abstracts/Lock.sol               | 100.00% (3/3)    | 100.00% (3/3)    | 0.00% (0/2)     | 100.00% (1/1)   |
+| src/libraries/CastLib.sol            | 100.00% (4/4)    | 100.00% (6/6)    | 0.00% (0/4)     | 100.00% (2/2)   |
+| src/libraries/FunctionCallLib.sol    | 91.67% (11/12)   | 86.67% (13/15)   | 50.00% (5/10)   | 100.00% (2/2)   |
+| src/libraries/HookCallLib.sol        | 87.50% (7/8)     | 90.00% (9/10)    | 100.00% (4/4)   | 100.00% (1/1)   |
+| src/libraries/TokenIdLib.sol         | 100.00% (3/3)    | 100.00% (3/3)    | 0.00% (0/2)     | 100.00% (2/2)   |
+| src/libraries/types/Delegation.sol   | 100.00% (30/30)  | 97.44% (38/39)   | 100.00% (8/8)   | 100.00% (8/8)   |
+| src/libraries/types/Undelegation.sol | 100.00% (28/28)  | 97.30% (36/37)   | 42.86% (6/14)   | 100.00% (6/6)   |
+| src/tokens/ERC6909.sol               | 50.00% (12/24)   | 50.00% (14/28)   | 0.00% (0/4)     | 71.43% (5/7)    |
+| Total                                | 92.61% (238/257) | 92.05% (278/302) | 45.45% (70/154) | 96.36% (53/55)  |
 ```
 
 Generate a `lcov` coverage report with:
