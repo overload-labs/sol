@@ -98,7 +98,7 @@ contract OverloadTest is Test {
         return overload.redelegate(fromKey, toKey, "", true);
     }
 
-    function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, uint256) {
+    function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
         DelegationKey memory key = DelegationKey({
             owner: user,
             token: address(token),
@@ -110,7 +110,7 @@ contract OverloadTest is Test {
         return overload.undelegating(key, amount, "", strict);
     }
 
-    function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, uint256) {
+    function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
         DelegationKey memory key = DelegationKey({
             owner: user,
             token: address(token_),
@@ -330,7 +330,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 50, "", false);
+        emit EOverload.Delegate(key, 50, "", false, 0);
         bool success = overload.delegate(key, 50, "", false);
         assertEq(success, true);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
@@ -356,7 +356,7 @@ contract OverloadTest is Test {
         // first 50
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 50, "", false);
+        emit EOverload.Delegate(key, 50, "", false, 0);
         assertTrue(overload.delegate(key, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
@@ -368,7 +368,7 @@ contract OverloadTest is Test {
         // second 50, total 100
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 50, "", false);
+        emit EOverload.Delegate(key, 50, "", false, 0);
         assertTrue(overload.delegate(key, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
@@ -476,7 +476,7 @@ contract OverloadTest is Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 100, abi.encodePacked(uint256(42)), true);
+        emit EOverload.Delegate(key, 100, abi.encodePacked(uint256(42)), true, 0);
         overload.delegate(key, 100, abi.encodePacked(uint256(42)), true);
     }
 
@@ -654,7 +654,15 @@ contract OverloadTest is Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Undelegating(key, 25, "", true);
+        UndelegationKey memory eukey = UndelegationKey({
+            owner: address(0),
+            token: address(0),
+            consensus: address(0),
+            validator: address(0),
+            amount: 0,
+            maturity: 0
+        });
+        emit EOverload.Undelegating(key, 25, "", true, eukey, -1);
         (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, 25, "", true));
         assertTrue(success);
         assertEq(ukey.owner, address(0));
@@ -876,7 +884,7 @@ contract OverloadTest is Test {
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
 
-        (, UndelegationKey memory ukey, uint256 index) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
+        (, UndelegationKey memory ukey, int256 index) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
 
         // The bonded is still the same here.
         // `balanceOf` + `bonded` needs to always equal the principal token amount.
@@ -884,7 +892,7 @@ contract OverloadTest is Test {
         assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
 
         vm.warp(501);
-        undelegate(address(0xBEEF), ukey, int256(index), "", true);
+        undelegate(address(0xBEEF), ukey, index, "", true);
 
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 50);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 50);

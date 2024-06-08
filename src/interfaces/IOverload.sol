@@ -99,8 +99,8 @@ interface IOverload {
     /// @param strict If true, then hook reverts are bubbled up, otherwise they are ignored.
     /// @return success Must return true.
     /// @return ukey The undelegation key.
-    /// @return index The index of the created undelegation object.
-    function undelegating(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) external returns (bool success, UndelegationKey memory ukey, uint256 index);
+    /// @return index The index of the created undelegation object. `-1` if no undelegation was added.
+    function undelegating(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) external returns (bool success, UndelegationKey memory ukey, int256 index);
 
     /// @notice Remove a matured undelegation object.
     /// @dev Removing an undelegation object could lead to reduction of bonded tokens and an increase of `balanceOf`

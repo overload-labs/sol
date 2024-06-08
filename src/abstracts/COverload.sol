@@ -125,7 +125,7 @@ abstract contract COverload {
         bytes calldata data,
         bool strict,
         UndelegationKey memory ukey,
-        uint256 index
+        int256 index
     ) internal {
         if (ERC165Checker.supportsInterface(target, HOverload.afterUndelegating.selector)) {
             HookCallLib.functionCallHook(

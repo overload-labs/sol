@@ -126,7 +126,7 @@ contract OverloadFuzzTest is Test {
             // Delegate
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit EOverload.Delegate(key, amount, data, strict);
+            emit EOverload.Delegate(key, amount, data, strict, 0);
             assertTrue(overload.delegate(key, amount, data, strict));
 
             assertEq(overload.getDelegationsLength(owner, address(token)), 1);

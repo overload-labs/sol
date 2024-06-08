@@ -223,7 +223,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         // After hook call
         _afterDelegateHook(key.consensus, gasBudget, key, delta, data, strict, delegation, index);
 
-        emit Delegate(key, delta, data, strict);
+        emit Delegate(key, delta, data, strict, index);
 
         return true;
     }
@@ -263,7 +263,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         uint256 delta,
         bytes calldata data,
         bool strict
-    ) public lock returns (bool, UndelegationKey memory undelegationKey, uint256 insertIndex) {
+    ) public lock returns (bool, UndelegationKey memory undelegationKey, int256 insertIndex) {
         // Check parameters
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
         require(delta > 0, Zero());
@@ -302,18 +302,19 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
                 amount: delta,
                 maturity: block.timestamp + undelegatingDelay[key.consensus]
             });
-            insertIndex = undelegations.add(undelegationKey);
+            insertIndex = undelegations.add(undelegationKey).i256();
         } else {
             // If there's no cooldown, we try moving tokens to `unbonded`.
             // Tokens are moved from to `unbonded` iff it creates a new lower maxima.
             undelegationKey = UndelegationLib.zeroKey();
+            insertIndex = -1;
             _bondUpdate(key.owner, key.token);
         }
 
         // Non-strict hook call
         _afterUndelegatingHook(key.consensus, gasBudget, key, delta, data, strict, undelegationKey, insertIndex);
 
-        emit Undelegating(key, delta, data, strict);
+        emit Undelegating(key, delta, data, strict, undelegationKey, insertIndex);
 
         return (true, undelegationKey, insertIndex);
     }

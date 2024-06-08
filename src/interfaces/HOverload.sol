@@ -69,7 +69,7 @@ interface HOverload {
     /// @param strict If true, then hook reverts are bubbled up, otherwise they are ignored.
     /// @param ukey The created undelegation object.
     /// @param undelegatingIndex The index of the created undelegation object.
-    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, UndelegationKey memory ukey, uint256 undelegatingIndex) external returns (bytes4);
+    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, bool strict, UndelegationKey memory ukey, int256 undelegatingIndex) external returns (bytes4);
 
     /*//////////////////////////////////////////////////////////////
                                UNDELEGATE

@@ -130,7 +130,7 @@ contract OverloadConsensusTest is Test {
         return overload.redelegate(fromKey, toKey, "", strict);
     }
 
-    function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, uint256) {
+    function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
         DelegationKey memory key = DelegationKey({
             owner: user,
             token: address(token),
@@ -142,7 +142,7 @@ contract OverloadConsensusTest is Test {
         return overload.undelegating(key, amount, "", strict);
     }
 
-    function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, uint256) {
+    function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
         DelegationKey memory key = DelegationKey({
             owner: user,
             token: address(token_),
@@ -302,7 +302,7 @@ contract OverloadConsensusTest is Test {
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
 
-        (, UndelegationKey memory ukey, uint256 index) = undelegating(address(0xBEEF), address(consensusRevertUndelegateMock), address(0xFFFF), 50, true);
+        (, UndelegationKey memory ukey, int256 index) = undelegating(address(0xBEEF), address(consensusRevertUndelegateMock), address(0xFFFF), 50, true);
 
         // The bonded is still the same here.
         // `balanceOf` + `bonded` needs to always equal the principal token amount.
@@ -342,7 +342,7 @@ contract OverloadConsensusTest is Test {
         vm.expectRevert();
         undelegating(address(0xBEEF), address(consensusNoHook), address(0xFFFF), 100, true);
         // Should not revert
-        (, UndelegationKey memory ukey, uint256 index) = undelegating(address(0xBEEF), address(consensusNoHook), address(0xFFFF), 100, false);
+        (, UndelegationKey memory ukey, int256 index) = undelegating(address(0xBEEF), address(consensusNoHook), address(0xFFFF), 100, false);
 
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
@@ -405,11 +405,11 @@ contract OverloadConsensusTest is Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 999_999));
-        overload.delegate{gas: 1_000_000 + 33240}(key, 100, "", false);
+        overload.delegate{gas: 1_000_000 + 33222}(key, 100, "", false);
 
         // Should not revert
         vm.prank(address(0xBEEF));
-        overload.delegate{gas: 1_000_000 + 33241}(key, 100, "", false);
+        overload.delegate{gas: 1_000_000 + 33223}(key, 100, "", false);
     }
 
     /*//////////////////////////////////////////////////////////////

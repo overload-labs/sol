@@ -31,7 +31,7 @@ interface EOverload {
     /// @param delta The amount of tokens to delegate.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Delegate(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
+    event Delegate(DelegationKey indexed key, uint256 delta, bytes data, bool strict, uint256 index);
     /// @notice Emitted when a delegation has its validator value changed.
     /// @param from The delegation key before the change.
     /// @param to The delegation key after the change.
@@ -44,7 +44,7 @@ interface EOverload {
     ///     object is removed.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Undelegating(DelegationKey indexed key, uint256 delta, bytes data, bool strict);
+    event Undelegating(DelegationKey indexed key, uint256 delta, bytes data, bool strict, UndelegationKey ukey,  int256 index);
     /// @notice Emitted when `undelegate` is called and an undelegatino is removed.
     /// @param key The undelegation key that can be used to find a generic undelegation object.
     /// @param position The assumed position of the undelegation object. Enter `-1` to loop through `undelegations`.
@@ -55,8 +55,8 @@ interface EOverload {
     /// @param consensus The consensus contract in which the validator is jailed for.
     /// @param validator The jailed validator.
     /// @param jailtime The amount of seconds the validator is jailed for.
-    /// @param timestamp The end date of the jail for the validator.
-    event Jail(address indexed consensus, address indexed validator, uint256 jailtime, uint256 timestamp);
+    /// @param maturity The end date of the jail for the validator.
+    event Jail(address indexed consensus, address indexed validator, uint256 jailtime, uint256 maturity);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERRORS                           */
