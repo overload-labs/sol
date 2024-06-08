@@ -177,7 +177,7 @@ contract OverloadConsensusTest is Test {
 
         // Undelegating
         vm.prank(address(0xBEEF));
-        (, UndelegationKey memory ukey, uint256 index) = overload.undelegating(toKey, 100, hex"42", true);
+        (, UndelegationKey memory ukey, ) = overload.undelegating(toKey, 100, hex"42", true);
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
 

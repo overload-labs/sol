@@ -24,7 +24,12 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeDelegate.selector, msg.sender, key, delta, data), strict);
+            HookCallLib.functionCallHook(
+                target,
+                gas,
+                abi.encodeCall(IHOverload.beforeDelegate, (msg.sender, key, delta, data)),
+                strict
+            );
         }
     }
 
@@ -41,14 +46,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeWithSelector(
-                    IHOverload.afterDelegate.selector,
-                    msg.sender,
-                    key,
-                    delta,
-                    delegation,
-                    data
-                ),
+                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, delegation, data)),
                 strict
             );
         }
@@ -67,7 +65,12 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeRedelegate.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeRedelegate.selector, msg.sender, from, to, data), strict);
+            HookCallLib.functionCallHook(
+                target,
+                gas,
+                abi.encodeCall(IHOverload.beforeRedelegate, (msg.sender, from, to, data)),
+                strict
+            );
         }
     }
 
@@ -80,7 +83,12 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterRedelegate.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.afterRedelegate.selector, msg.sender, from, to, data), strict);
+            HookCallLib.functionCallHook(
+                target,
+                gas,
+                abi.encodeCall(IHOverload.afterRedelegate, (msg.sender, from, to, data)),
+                strict
+            );
         }
     }
 
@@ -97,7 +105,12 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeUndelegating.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeUndelegating.selector, msg.sender, key, delta, data), strict);
+            HookCallLib.functionCallHook(
+                target,
+                gas,
+                abi.encodeCall(IHOverload.beforeUndelegating, (msg.sender, key, delta, data)),
+                strict
+            );
         }
     }
 
@@ -114,14 +127,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeWithSelector(
-                    IHOverload.afterUndelegating.selector,
-                    msg.sender,
-                    key,
-                    delta,
-                    ukey,
-                    data
-                ),
+                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, ukey, data)),
                 strict
             );
         }
@@ -140,7 +146,12 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.beforeUndelegate.selector, msg.sender, key, position, data), strict);
+            HookCallLib.functionCallHook(
+                target,
+                gas,
+                abi.encodeCall(IHOverload.beforeUndelegate, (msg.sender, key, position, data)),
+                strict
+            );
         }
     }
 
@@ -153,7 +164,12 @@ abstract contract COverload {
         bool strict
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegate.selector)) {
-            HookCallLib.functionCallHook(target, gas, abi.encodeWithSelector(IHOverload.afterUndelegate.selector, msg.sender, key, position, data), strict);
+            HookCallLib.functionCallHook(
+                target,
+                gas,
+                abi.encodeCall(IHOverload.afterUndelegate, (msg.sender, key, position, data)),
+                strict
+            );
         }
     }
 }

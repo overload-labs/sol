@@ -160,9 +160,9 @@ contract ConsensusRevertDelegateMock is IHOverload {
         revert();
     }
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {}
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {}
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
 
     function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata) external pure returns (bytes4) {}
 
@@ -193,11 +193,11 @@ contract ConsensusRevertRedelegateMock is IHOverload {
 
     function afterDelegate(address, DelegationKey memory, uint256, Delegation memory, bytes calldata) external pure returns (bytes4) {}
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {
         revert();
     }
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {
         revert();
     }
 
@@ -230,9 +230,9 @@ contract ConsensusRevertUndelegatingMock is IHOverload {
 
     function afterDelegate(address, DelegationKey memory, uint256, Delegation memory, bytes calldata) external pure returns (bytes4) {}
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {}
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {}
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
 
     function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata) external pure returns (bytes4) {
         revert();
@@ -267,9 +267,9 @@ contract ConsensusRevertUndelegateMock is IHOverload {
 
     function afterDelegate(address, DelegationKey memory, uint256, Delegation memory, bytes calldata) external pure returns (bytes4) {}
 
-    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {}
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
 
-    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public returns (bytes4) {}
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata) public pure returns (bytes4) {}
 
     function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata) external pure returns (bytes4) {}
 
@@ -306,4 +306,6 @@ contract ConsensusNoHook {
             interfaceId == IHOverload.beforeUndelegate.selector ||
             interfaceId == IHOverload.afterUndelegate.selector;
     }
+
+    function test() public {}
 }

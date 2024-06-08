@@ -163,19 +163,19 @@ Hooks in Overload differ from e.g. Uniswap V4. Instead of having hook permission
 
 ## Install
 
-```
+```sh
 $ forge install
 ```
 
 ## Build
 
-```
+```sh
 $ forge build
 ```
 
 ## Test
 
-```
+```sh
 $ forge test
 ```
 
