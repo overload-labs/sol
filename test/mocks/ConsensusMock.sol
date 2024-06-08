@@ -322,7 +322,119 @@ contract ConsensusNoHook {
     function test() public {}
 }
 
+contract ConsensusNoERC165Interface is IHOverload {
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {}
+
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
+
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {}
+
+    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool) external pure returns (bytes4) {}
+
+    function test() public {}
+}
+
+contract ConsensusWhenERC165InterfaceReverts is IHOverload {
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {}
+
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
+
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {}
+
+    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool) external pure returns (bytes4) {}
+
+    function supportsInterface(bytes4) public pure returns (bool) {
+        revert();
+    }
+
+    function test() public {}
+}
+
+contract ConsensusWrongReturnValueOnHook is IHOverload {
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata, bool) external pure returns (bytes4) {
+        return IHOverload.afterDelegate.selector;
+    }
+
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
+
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {}
+
+    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool) external pure returns (bytes4) {}
+
+    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+        return
+            interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
+            interfaceId == IHOverload.beforeDelegate.selector;
+    }
+
+    function test() public {}
+}
+
 contract ConsensusInsufficientGasBudget {
+    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+        return
+            interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
+            interfaceId == IHOverload.beforeDelegate.selector;
+    }
+
+    function test() public {}
+}
+
+contract ConsensusGasEater is IHOverload {
+    mapping(uint256 x => uint256 y) public slots;
+
+    function set(uint256 x, uint256 y) public {
+        slots[x] = y;
+    }
+
+    function beforeDelegate(address, DelegationKey memory, uint256, bytes calldata data, bool) external returns (bytes4) {
+        uint256 runs = abi.decode(data, (uint256));
+
+        for (uint256 i = 0; i < runs; i++) {
+            set(i, i);
+        }
+
+        return IHOverload.beforeDelegate.selector;
+    }
+
+    function afterDelegate(address, DelegationKey memory, uint256, bytes calldata, bool, Delegation memory, uint256) external pure returns (bytes4) {}
+
+    function beforeRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function afterRedelegate(address, DelegationKey memory, DelegationKey memory, bytes calldata, bool) public pure returns (bytes4) {}
+
+    function beforeUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegating(address, DelegationKey memory, uint256, bytes calldata, bool, UndelegationKey memory, uint256) external pure returns (bytes4) {}
+
+    function beforeUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool, uint256) external pure returns (bytes4) {}
+
+    function afterUndelegate(address, UndelegationKey memory, int256, bytes calldata, bool) external pure returns (bytes4) {}
+
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165

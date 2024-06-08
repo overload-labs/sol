@@ -88,7 +88,10 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*                           VIEWS                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    // Delegation
+    /**
+     * Delegation
+     */
+
     function getDelegationsLength(address owner, address token) public view returns (uint256) {
         return delegations[owner][token].length;
     }
@@ -109,7 +112,10 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
         (delegation, ) = delegations.get(key, false);
     }
 
-    // Undelegation
+    /**
+     * Undelegation
+     */
+
     function getUndelegationLength(address owner, address token) public view returns (uint256) {
         return undelegations[owner][token].length;
     }

@@ -6,9 +6,11 @@ import {Test, console, console2, stdError} from "forge-std/Test.sol";
 import {DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
 import {UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 import {FunctionCallLib} from "../src/libraries/FunctionCallLib.sol";
+import {HookCallLib} from "../src/libraries/HookCallLib.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
+import {ConsensusMirror} from "./mocks/avs/ConsensusMirrorMock.sol";
 import {
     ConsensusHookParametersMock,
     ConsensusRevertDelegateMock,
@@ -16,7 +18,11 @@ import {
     ConsensusRevertUndelegatingMock,
     ConsensusRevertUndelegateMock,
     ConsensusNoHook,
-    ConsensusInsufficientGasBudget
+    ConsensusNoERC165Interface,
+    ConsensusWhenERC165InterfaceReverts,
+    ConsensusWrongReturnValueOnHook,
+    ConsensusInsufficientGasBudget,
+    ConsensusGasEater
 } from "./mocks/ConsensusMock.sol";
 import {ERC20Fee} from "./mocks/ERC20Fee.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
@@ -30,24 +36,34 @@ contract OverloadConsensusTest is Test {
 
     Overload public overload;
     ERC20Mock public token;
+    ConsensusMirror public consensusMirror;
     ConsensusHookParametersMock public consensusHookParametersMock;
     ConsensusRevertDelegateMock public consensusRevert;
     ConsensusRevertRedelegateMock public consensusRevertRedelegateMock;
     ConsensusRevertUndelegatingMock public consensusRevertUndelegating;
     ConsensusRevertUndelegateMock public consensusRevertUndelegateMock;
     ConsensusNoHook public consensusNoHook;
+    ConsensusNoERC165Interface public consensusNoERC165Interface;
+    ConsensusWhenERC165InterfaceReverts public consensusWhenERC165InterfaceReverts;
+    ConsensusWrongReturnValueOnHook public consensusWrongReturnValueOnHook;
     ConsensusInsufficientGasBudget public consensusInsufficientGasBudget;
+    ConsensusGasEater public consensusGasEater;
 
     function setUp() public {
         overload = new Overload();
         token = new ERC20Mock("Test", "TEST", 18);
+        consensusMirror = new ConsensusMirror(address(overload));
         consensusHookParametersMock = new ConsensusHookParametersMock(address(overload), address(token));
         consensusRevert = new ConsensusRevertDelegateMock(address(overload));
         consensusRevertRedelegateMock = new ConsensusRevertRedelegateMock(address(overload));
         consensusRevertUndelegating = new ConsensusRevertUndelegatingMock(address(overload));
         consensusRevertUndelegateMock = new ConsensusRevertUndelegateMock(address(overload));
         consensusNoHook = new ConsensusNoHook();
+        consensusNoERC165Interface = new ConsensusNoERC165Interface();
+        consensusWhenERC165InterfaceReverts = new ConsensusWhenERC165InterfaceReverts();
+        consensusWrongReturnValueOnHook = new ConsensusWrongReturnValueOnHook();
         consensusInsufficientGasBudget = new ConsensusInsufficientGasBudget();
+        consensusGasEater = new ConsensusGasEater();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -146,6 +162,27 @@ contract OverloadConsensusTest is Test {
     function setUndelegatingDelay(address consensus, uint256 delay) public {
         vm.prank(consensus);
         overload.setUndelegatingDelay(consensus, delay);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    CONSENSUS WITH MIRRORED BALANCE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_delegate_consensusMirror() public {
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(consensusMirror), address(0xFFFF), 100, true);
+        deposit(address(0xABCD), 100);
+        delegate(address(0xABCD), address(consensusMirror), address(0xFFFF), 100, true);
+
+        assertEq(consensusMirror.getBalance(address(0xBEEF), address(token)), 100);
+        assertEq(consensusMirror.getValidator(address(0xFFFF), address(token)), 200);
+        assertEq(consensusMirror.getPool(address(token)), 200);
+
+        undelegating(address(0xBEEF), address(consensusMirror), address(0xFFFF), 50, true);
+
+        assertEq(consensusMirror.getBalance(address(0xBEEF), address(token)), 50);
+        assertEq(consensusMirror.getValidator(address(0xFFFF), address(token)), 150);
+        assertEq(consensusMirror.getPool(address(token)), 150);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -322,6 +359,37 @@ contract OverloadConsensusTest is Test {
     }
 
     /*//////////////////////////////////////////////////////////////
+                     CONSENSUS NO ERC165 INTERFACE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_delegate_noERC165Interface() public {
+        deposit(address(0xBEEF), 100);
+        delegate(address(0xBEEF), address(consensusNoERC165Interface), address(0xFFFF), 100, false);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                   CONSENSUS ERC165 INTERFACE REVERTS
+    //////////////////////////////////////////////////////////////*/
+
+    function test_delegate_erc165InterfaceReverts() public {
+        deposit(address(0xBEEF), 100);
+
+        // Does not revert even when `strict` is `true`, because of the logic in OZ's `ERC165Checker` library.
+        delegate(address(0xBEEF), address(consensusWhenERC165InterfaceReverts), address(0xFFFF), 100, true);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                  CONSENSUS WRONG RETURN VALUE ON HOOK
+    //////////////////////////////////////////////////////////////*/
+
+    function test_delegate_consensusWrongReturnValueOnHook() public {
+        deposit(address(0xBEEF), 100);
+
+        vm.expectRevert(HookCallLib.InvalidHookResponse.selector);
+        delegate(address(0xBEEF), address(consensusWrongReturnValueOnHook), address(0xFFFF), 100, true);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                     CONSENSUS INSUFFICENT GAS BUDGET
     //////////////////////////////////////////////////////////////*/
 
@@ -342,5 +410,44 @@ contract OverloadConsensusTest is Test {
         // Should not revert
         vm.prank(address(0xBEEF));
         overload.delegate{gas: 1_000_000 + 33241}(key, 100, "", false);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                  CONSENSUS REVERT ABOVE 1M GAS USAGE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_delegate_consensusGasEater() public {
+        deposit(address(0xBEEF), 100);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(consensusGasEater),
+            validator: address(0xFFFF)
+        });
+
+        // Reverts
+        uint256 gasLeft = gasleft();
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(FunctionCallLib.FailedCall.selector);
+        overload.delegate(key, 100, abi.encodePacked(uint256(46)), true);
+        console2.log(gasLeft - gasleft());
+
+        // Does not revert
+        gasLeft = gasleft();
+        vm.prank(address(0xBEEF));
+        overload.delegate(key, 50, abi.encodePacked(uint256(45)), true);
+        console2.log(gasLeft - gasleft());
+
+        // Does not revert, because strict is false
+        gasLeft = gasleft();
+        vm.prank(address(0xBEEF));
+        overload.delegate(key, 50, abi.encodePacked(uint256(100)), false);
+        console2.log(gasLeft - gasleft());
+
+        assertEq(consensusGasEater.slots(44), 44);
+        assertEq(consensusGasEater.slots(45), 0);
+        assertEq(consensusGasEater.slots(50), 0);
+        assertEq(consensusGasEater.slots(100), 0);
     }
 }
