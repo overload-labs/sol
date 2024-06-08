@@ -5,6 +5,7 @@ import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
 import {DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
 import {UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
+import {FunctionCallLib} from "../src/libraries/FunctionCallLib.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
@@ -14,7 +15,8 @@ import {
     ConsensusRevertRedelegateMock,
     ConsensusRevertUndelegatingMock,
     ConsensusRevertUndelegateMock,
-    ConsensusNoHook
+    ConsensusNoHook,
+    ConsensusInsufficientGasBudget
 } from "./mocks/ConsensusMock.sol";
 import {ERC20Fee} from "./mocks/ERC20Fee.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
@@ -34,6 +36,7 @@ contract OverloadConsensusTest is Test {
     ConsensusRevertUndelegatingMock public consensusRevertUndelegating;
     ConsensusRevertUndelegateMock public consensusRevertUndelegateMock;
     ConsensusNoHook public consensusNoHook;
+    ConsensusInsufficientGasBudget public consensusInsufficientGasBudget;
 
     function setUp() public {
         overload = new Overload();
@@ -44,6 +47,7 @@ contract OverloadConsensusTest is Test {
         consensusRevertUndelegating = new ConsensusRevertUndelegatingMock(address(overload));
         consensusRevertUndelegateMock = new ConsensusRevertUndelegateMock(address(overload));
         consensusNoHook = new ConsensusNoHook();
+        consensusInsufficientGasBudget = new ConsensusInsufficientGasBudget();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -315,5 +319,28 @@ contract OverloadConsensusTest is Test {
 
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 100);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 0);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    CONSENSUS INSUFFICENT GAS BUDGET
+    //////////////////////////////////////////////////////////////*/
+
+    function test_fail_delegate_gasBelowGasBudget() public {
+        deposit(address(0xBEEF), 100);
+
+        // Should revert
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(consensusInsufficientGasBudget),
+            validator: address(0xFFFF)
+        });
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 999_999));
+        overload.delegate{gas: 1_000_000 + 33240}(key, 100, "", false);
+
+        // Should not revert
+        vm.prank(address(0xBEEF));
+        overload.delegate{gas: 1_000_000 + 33241}(key, 100, "", false);
     }
 }

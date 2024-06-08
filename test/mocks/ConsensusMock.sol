@@ -321,3 +321,13 @@ contract ConsensusNoHook {
 
     function test() public {}
 }
+
+contract ConsensusInsufficientGasBudget {
+    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+        return
+            interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
+            interfaceId == IHOverload.beforeDelegate.selector;
+    }
+
+    function test() public {}
+}

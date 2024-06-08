@@ -71,8 +71,8 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     uint256 public maxDelegations = 256;
     uint256 public maxUndelegations = 32;
     uint256 public maxUndelegatingDelay = 604_800; // 7 days
+    uint256 public jailCooldown = 86_400; // 1 day
     uint256 public maxJailTime = 604_800; // 7 days
-    uint256 public minJailCooldown = 86_400; // 1 day
 
     // Canonical token accounting
     mapping(address owner => mapping(address token => uint256 amount)) public bonded;
@@ -359,12 +359,12 @@ contract Overload is IOverload, COverload, ERC6909, Lock {
     /*                            JAIL                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @dev When `block.timestamp` is below `minJailCooldown`, then the `jail` function will stop working. We do not
+    /// @dev When `block.timestamp` is below `jailCooldown`, then the `jail` function will stop working. We do not
     ///     expect the `block.timestamp` to be of such value although, the timestamp should always strictly be higher
-    ///     than `minJailCooldown` - otherwise a blockchain has been configured wrongly, or it's a testchain.
+    ///     than `jailCooldown` - otherwise a blockchain has been configured wrongly, or it's a testchain.
     function jail(address validator, uint256 jailtime) public lock returns (bool) {
         // A validator cannot be continously jailed, a minimum cooldown is required.
-        require(jailed[msg.sender][validator] + minJailCooldown <= block.timestamp, JailOnCooldown());
+        require(jailed[msg.sender][validator] + jailCooldown <= block.timestamp, JailOnCooldown());
         require(jailtime <= maxJailTime, ValueExceedsMaxJailtime());
 
         if (jailtime > 0) {

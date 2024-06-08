@@ -8,13 +8,16 @@ library FunctionCallLib {
     /// @notice A call to an address target failed. The target may have reverted.
     /// @dev OpenZeppelin Contracts @ 5.0.2
     error FailedCall();
+    /// @notice Reverts when insufficent gas is left from `gasleft()` for `functionCallGas`.
+    error InsufficientGas(uint256 gasLeft);
 
     function functionCall(address target, bytes memory data, bool strict) internal returns (bool, bytes memory) {
         return functionCallGas(target, 0, data, strict);
     }
 
     function functionCallGas(address target, uint256 gas, bytes memory data, bool strict) internal returns (bool, bytes memory) {
-        require(gasleft() >= gas);
+        uint256 gasLeft = gasleft();
+        require(gasLeft >= gas, InsufficientGas(gasLeft));
 
         (bool success, bytes memory result) = address(target).call{gas: gas}(data);
 
