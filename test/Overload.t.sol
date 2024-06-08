@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
 import {EOverload} from "../src/interfaces/EOverload.sol";
-import {Delegation, DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
-import {Undelegation, UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
+import {Delegation, DelegationKey, DelegationLib} from "../src/libraries/types/Delegation.sol";
+import {Undelegation, UndelegationKey, UndelegationLib} from "../src/libraries/types/Undelegation.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";
 import {Overload} from "../src/Overload.sol";
 
@@ -413,7 +413,7 @@ contract OverloadTest is Test {
         delegate(tokenB, address(0xBEEF), address(0xF), address(0x1), 50, true);
 
         // Should revert when trying to delegate to another validator when existing (consensus, validator) exists
-        vm.expectRevert(DelegationNotFound.selector);
+        vm.expectRevert(DelegationLib.DelegationNotFound.selector);
         delegate(tokenB, address(0xBEEF), address(0xF), address(0x2), 100, true);
 
         // Should delegate another time
@@ -486,7 +486,7 @@ contract OverloadTest is Test {
         deposit(address(0xBEEF), 100);
 
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
-        vm.expectRevert(DelegationNotFound.selector);
+        vm.expectRevert(DelegationLib.DelegationNotFound.selector);
         delegate(address(0xBEEF), address(0xCCCC), address(0xEEEE), 50, false);
     }
 
@@ -634,7 +634,7 @@ contract OverloadTest is Test {
     function test_fail_redelegate_delegationNotFound() public {
         deposit(address(0xBEEF), 1000);
 
-        vm.expectRevert(DelegationNotFound.selector);
+        vm.expectRevert(DelegationLib.DelegationNotFound.selector);
         redelegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), address(0xEEEE));
     }
 
@@ -796,7 +796,7 @@ contract OverloadTest is Test {
     function test_fail_undelegating_delegationNotFound() public {
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
-        vm.expectRevert(DelegationNotFound.selector);
+        vm.expectRevert(DelegationLib.DelegationNotFound.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0x1234), 50, true);
     }
 
@@ -940,7 +940,7 @@ contract OverloadTest is Test {
             amount: 1,
             maturity: 1
         });
-        vm.expectRevert(UndelegationNotFound.selector);
+        vm.expectRevert(UndelegationLib.UndelegationNotFound.selector);
         undelegate(address(0xBEEF), ukey, int256(-1), "", true);
     }
 

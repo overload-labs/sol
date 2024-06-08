@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import {CastLib} from "../CastLib.sol";
 
-error UndelegationNotFound();
-
+/// @dev The undelegation objects are non-unique.
+/// @dev A pair of (UndelegationKey, index) is unique.
 struct Undelegation {
     address consensus;
     address validator;
@@ -13,6 +13,7 @@ struct Undelegation {
     uint256 maturity; // a unix timestamp in seconds
 }
 
+/// @dev The identifier for any matching undelegation object.
 struct UndelegationKey {
     address owner;
     address token;
@@ -22,34 +23,51 @@ struct UndelegationKey {
     uint256 maturity;
 }
 
+/// @title UndelegationLib
 library UndelegationLib {
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Thrown when an undelegation is not found using the `get` function.
+    error UndelegationNotFound();
+
     /*//////////////////////////////////////////////////////////////
                                  VIEWS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Looks for a matching undelegation object and returns it with the index found.
+    /// @param map The undelegation array map.
+    /// @param key The key of the undelegation.
+    /// @param strict Whether to strictly find a undelegation or not.
+    /// @return undelegation The undelegation object. Empty object if not found.
+    /// @return index The index of the undelegation object. `-1` if not found
     function get(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
         UndelegationKey memory key,
         bool strict
-    ) internal view returns (Undelegation memory delegation, int256 index) {
+    ) internal view returns (Undelegation memory undelegation, int256 index) {
         int256 position_ = position(map, key);
 
         if (position_ >= 0) {
             index = position_;
-            delegation = map[key.owner][key.token][CastLib.u256(index)];
+            undelegation = map[key.owner][key.token][CastLib.u256(index)];
         } else {
             if (strict) {
                 revert UndelegationNotFound();
             } else {
                 index = -1;
-                delegation = zero();
+                undelegation = zero();
             }
         }
     }
 
+    /// @notice Returns the index of an undelegation object if found.
     /// @dev Undelegations are not unique, even with maturity timestamp are included. Although, this is fine as two
-    ///     identital keys are effectively also imply objects being identical. Hence, fetching for an object with a key will
-    ///     return the first match.
+    ///     identital keys are effectively also imply objects being identical. Hence, fetching for an object with a key
+    ///     will return the first match.
+    /// @param map The undelegation array map.
+    /// @param key The key of the undelegation.
     function position(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
         UndelegationKey memory key
@@ -70,6 +88,7 @@ library UndelegationLib {
         return -1;
     }
 
+    /// @notice Returns an empty undelegation object.
     function zero() internal pure returns (Undelegation memory) {
         return Undelegation({
             consensus: address(0),
@@ -79,6 +98,7 @@ library UndelegationLib {
         });
     }
 
+    /// @notice Returns an empty undelegation key.
     function zeroKey() internal pure returns (UndelegationKey memory) {
         return UndelegationKey({
             owner: address(0),
@@ -94,6 +114,9 @@ library UndelegationLib {
                                  MUTATE
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Add an udelegation object to the undelegations array.
+    /// @param map The undelegation array map.
+    /// @param key The undelegation key to add.
     function add(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
         UndelegationKey memory key
@@ -107,6 +130,10 @@ library UndelegationLib {
         }));
     }
 
+    /// @notice Remove an undelegation object from the undelegations array.
+    /// @param map The undelegation array map.
+    /// @param key The key of the undelegation object.
+    /// @param index The index of the undelegation object.
     function remove(
         mapping(address owner => mapping(address token => Undelegation[])) storage map,
         UndelegationKey memory key,

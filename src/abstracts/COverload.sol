@@ -8,7 +8,7 @@ import {HookCallLib} from "../libraries/HookCallLib.sol";
 import {DelegationLib, Delegation, DelegationKey} from "../libraries/types/Delegation.sol";
 import {UndelegationLib, Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol";
 
-/// @title Overload Calls
+/// @title COverload (Overload Calls)
 /// @notice The implementation of the Overload calls contract.
 /// @dev The logic for how the `Overload.sol` calls contracts that implement the hooks from `HOverload.sol`.
 abstract contract COverload {

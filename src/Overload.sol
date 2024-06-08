@@ -16,7 +16,7 @@ import {ERC6909} from "./tokens/ERC6909.sol";
 
 /// @title Overload
 /// @author @egozoq
-/// @notice A modular and general restaking contract.
+/// @notice A minimal, modular and generalized restaking contract.
 contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     using CastLib for uint256;
     using CastLib for int256;
@@ -30,25 +30,34 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    // Variables
     /// @notice The gas budget that a hook call has.
     /// @dev A hook not consuming withing the budget can lead to unexpected behaviours on the consensus contracts. It's
     ///     important that the implemented hooks stay within good margin of the gas budget.
     uint256 public gasBudget = 1_000_000;
+    /// @dev The max delegations allowed per token.
     uint256 public maxDelegations = 256;
+    /// @dev The max undelegations allowed per token.
     uint256 public maxUndelegations = 32;
+    /// @dev The max undelegation delay allowed for a consensus contract.
     uint256 public maxUndelegatingDelay = 604_800; // 7 days
+    /// @dev The jail cooldown, before `jail` can be called again on a (consensus, validator) pair.
     uint256 public jailCooldown = 86_400; // 1 day
+    /// @dev The max jailtime for a (consensus, validator) pair.
     uint256 public maxJailTime = 604_800; // 7 days
 
-    // Canonical token accounting
+    /// @dev The amount of tokens bonded for a user.
     mapping(address owner => mapping(address token => uint256 amount)) public bonded;
-
+    /// @dev Whether a user has delegated a token to a consensus contract already or not.
+    /// @dev As delegations are unique per token, this prevents duplicates.
     mapping(address owner => mapping(address token => mapping(address consensus => bool))) public delegated;
+    /// @dev The delegations array, for each token.
     mapping(address owner => mapping(address token => Delegation[])) public delegations;
+    /// @dev The undelegations array, for each token.
     mapping(address owner => mapping(address token => Undelegation[])) public undelegations;
 
+    /// @dev The undelegating delay, per consensus contract.
     mapping(address consensus => uint256 delay) public undelegatingDelay;
+    /// @dev The jailed validators, per consensus contract.
     mapping(address consensus => mapping(address validator => uint256 timestamp)) public jailed;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -59,14 +68,17 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
      * Delegation
      */
 
+    /// @inheritdoc IOverload
     function getDelegationsLength(address owner, address token) public view returns (uint256) {
         return delegations[owner][token].length;
     }
 
+    /// @inheritdoc IOverload
     function getDelegations(address owner, address token) public view returns (Delegation[] memory) {
         return delegations[owner][token];
     }
 
+    /// @inheritdoc IOverload
     function getDelegation(address owner, address token, uint256 index) public view returns (Delegation memory) {
         if (index < delegations[owner][token].length) {
             return delegations[owner][token][index];
@@ -75,6 +87,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
     }
 
+    /// @inheritdoc IOverload
     function getDelegation(DelegationKey memory key) public view returns (Delegation memory delegation) {
         (delegation, ) = delegations.get(key, false);
     }
@@ -83,14 +96,17 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
      * Undelegation
      */
 
+    /// @inheritdoc IOverload
     function getUndelegationLength(address owner, address token) public view returns (uint256) {
         return undelegations[owner][token].length;
     }
 
+    /// @inheritdoc IOverload
     function getUndelegations(address owner, address token) public view returns (Undelegation[] memory) {
         return undelegations[owner][token];
     }
 
+    /// @inheritdoc IOverload
     function getUndelegation(address owner, address token, uint256 index) public view returns (Undelegation memory) {
         if (index < undelegations[owner][token].length) {
             return undelegations[owner][token][index];
@@ -99,6 +115,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
     }
 
+    /// @inheritdoc IOverload
     function getUndelegation(UndelegationKey memory key) public view returns (Undelegation memory undelegation) {
         (undelegation, ) = undelegations.get(key, false);
     }
@@ -107,6 +124,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*                           ADMIN                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IOverload
     function setUndelegatingDelay(address consensus, uint256 delay) public lock returns (bool) {
         require(msg.sender == consensus || isOperator[consensus][msg.sender], Unauthorized());
         require(delay <= maxUndelegatingDelay, ValueExceedsMaxDelay());
@@ -122,6 +140,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*                      DEPOSIT/WITHDRAW                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IOverload
     function deposit(address owner, address token, uint256 amount) public lock returns (bool) {
         require(amount > 0, Zero());
 
@@ -135,6 +154,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         return true;
     }
 
+    /// @inheritdoc IOverload
     function withdraw(address owner, address token, uint256 amount, address recipient) public lock returns (bool) {
         if (msg.sender != owner && !isOperator[owner][msg.sender]) {
             uint256 allowed = allowance[owner][msg.sender][token.convertToId()];
@@ -157,6 +177,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*                         RESTAKING                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IOverload
     function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) public lock returns (bool) {
         // Check for owner or approval
         if (msg.sender != key.owner && !isOperator[key.owner][msg.sender]) {
@@ -207,6 +228,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         return true;
     }
 
+    /// @inheritdoc IOverload
     function redelegate(
         DelegationKey memory from,
         DelegationKey memory to,
@@ -235,7 +257,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         return true;
     }
 
-    /// @dev Convert a specific `Delegaton` object to `Undelegation`
+    /// @inheritdoc IOverload
     function undelegating(
         DelegationKey memory key,
         uint256 delta,
@@ -296,6 +318,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         return (true, undelegationKey, insertIndex);
     }
 
+    /// @inheritdoc IOverload
     function undelegate(UndelegationKey memory key, int256 position, bytes calldata data, bool strict) public lock returns (bool) {
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
 
@@ -332,9 +355,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*                            JAIL                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @dev When `block.timestamp` is below `jailCooldown`, then the `jail` function will stop working. We do not
-    ///     expect the `block.timestamp` to be of such value although, the timestamp should always strictly be higher
-    ///     than `jailCooldown` - otherwise a blockchain has been configured wrongly, or it's a testchain.
+    /// @inheritdoc IOverload
     function jail(address validator, uint256 jailtime) public lock returns (bool) {
         // A validator cannot be continously jailed, a minimum cooldown is required.
         require(jailed[msg.sender][validator] + jailCooldown <= block.timestamp, JailOnCooldown());
@@ -353,6 +374,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*                          INTERNAL                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @dev Only increase the token bonding.
     function _bondTokens(address owner, address token, uint256 amount) internal {
         if (amount > bonded[owner][token]) {
             uint256 delta = amount - bonded[owner][token];

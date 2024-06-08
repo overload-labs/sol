@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 import {CastLib} from "../CastLib.sol";
 
-error DelegationNotFound();
-
 /// @dev `Delegation` objects are unique. There cannot be duplicates inside the mapping.
 struct Delegation {
     address consensus;
@@ -12,7 +10,7 @@ struct Delegation {
     uint256 amount;
 }
 
-/// @dev `DelegationKey`s are used to identify the unique Delegation objects.
+/// @dev `DelegationKey`s are used to identify the unique delegation objects.
 struct DelegationKey {
     address owner;
     address token;
@@ -20,11 +18,26 @@ struct DelegationKey {
     address validator;
 }
 
+/// @title DelegationLib
+/// @notice The delegation library provides funtions to view and mutate delegation objects.
 library DelegationLib {
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Thrown when a delegation is not found using the `get` function.
+    error DelegationNotFound();
+
     /*//////////////////////////////////////////////////////////////
                                  VIEWS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Looks for a matching delegation object and returns it with the index found.
+    /// @param map The delegation array map.
+    /// @param key The key of the delegation.
+    /// @param strict Whether to strictly find a delegation or not.
+    /// @return delegation The delegation object. Empty object if not found.
+    /// @return index The index of the delegation object. `-1` if not found
     function get(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         DelegationKey memory key,
@@ -45,6 +58,9 @@ library DelegationLib {
         }
     }
 
+    /// @notice Returns the index of a delegation object if found.
+    /// @param map The delegation array map.
+    /// @param key The key of the delegation.
     function position(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         DelegationKey memory key
@@ -62,6 +78,10 @@ library DelegationLib {
         return -1;
     }
 
+    /// @notice Returns the max value of the delegations objects.
+    /// @param map The delegation array map.
+    /// @param owner The owner of the delegation objects.
+    /// @param token The token of the delegation objects.
     function max(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         address owner,
@@ -78,6 +98,7 @@ library DelegationLib {
         }
     }
 
+    /// @notice Returns an empty delegation object.
     function zero() internal pure returns (Delegation memory) {
         return Delegation({
             consensus: address(0),
@@ -90,6 +111,12 @@ library DelegationLib {
                                  MUTATE
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Increases the delegation object's `amount` by `delta`.
+    /// @param map The delegation array map.
+    /// @param owner The owner of the delegation object.
+    /// @param token The token of the delegation object.
+    /// @param index The index of the delegation object in the array.
+    /// @param delta The amount to increase `amount` value by for the delegation object.
     function increase(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         address owner,
@@ -101,6 +128,12 @@ library DelegationLib {
         return map[owner][token][index];
     }
 
+    /// @notice Decreases the delegation object's `amount` by `delta`.
+    /// @param map The delegation array map.
+    /// @param owner The owner of the delegation object.
+    /// @param token The token of the delegation object.
+    /// @param index The index of the delegation object in the array.
+    /// @param delta The amount to decrease `amount` value by for the delegation object.
     function decrease(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         address owner,
@@ -112,6 +145,12 @@ library DelegationLib {
         return map[owner][token][index];
     }
 
+    /// @notice Add a delegation object to the delegations array.
+    /// @param map The delegation array map.
+    /// @param key The delegation key to add.
+    /// @param amount The amount of tokens to add to the delegation.
+    /// @return delegation The delegation object added to the array.
+    /// @return index The index of the added delegation object.
     function add(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         DelegationKey memory key,
@@ -127,6 +166,11 @@ library DelegationLib {
         );
     }
 
+    /// @notice Remove a delegation object from the delegations array.
+    /// @param map The delegation array map.
+    /// @param owner The owner of the delegation object.
+    /// @param token The token of the delegation object.
+    /// @param index The index of the delegation object.
     function remove(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         address owner,

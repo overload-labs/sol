@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import {Test, console, console2, stdError} from "forge-std/Test.sol";
 
-import {DelegationNotFound, DelegationKey} from "../src/libraries/types/Delegation.sol";
-import {UndelegationNotFound, UndelegationKey} from "../src/libraries/types/Undelegation.sol";
+import {DelegationKey} from "../src/libraries/types/Delegation.sol";
+import {UndelegationKey} from "../src/libraries/types/Undelegation.sol";
 import {FunctionCallLib} from "../src/libraries/FunctionCallLib.sol";
 import {HookCallLib} from "../src/libraries/HookCallLib.sol";
 import {TokenIdLib} from "../src/libraries/TokenIdLib.sol";

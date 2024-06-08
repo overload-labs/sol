@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/// @title FunctionCallLib
 library FunctionCallLib {
     /// @notice There's no code at `target` (it is not a contract).
     /// @dev OpenZeppelin Contracts @ 5.0.2
@@ -11,6 +12,11 @@ library FunctionCallLib {
     /// @notice Reverts when insufficent gas is left from `gasleft()` for `functionCallGas`.
     error InsufficientGas(uint256 gasLeft);
 
+    /// @dev Performs a Solidity function call using a low level `call` with a gas value.
+    /// @param target The target address to call.
+    /// @param gas The gas to pass to the call.
+    /// @param data The data to pass to the call
+    /// @param strict Whether to bubble up the revert or not from the call.
     function functionCallGas(address target, uint256 gas, bytes memory data, bool strict) internal returns (bool, bytes memory) {
         uint256 gasLeft = gasleft();
         require(gasLeft >= gas, InsufficientGas(gasLeft));
