@@ -3,17 +3,7 @@
 
 pragma solidity >=0.6.12;
 
-contract Math {
-    // --- Math ---
-    function add(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x);
-    }
-    function sub(uint x, uint y) internal pure returns (uint z) {
-        require((z = x - y) <= x);
-    }
-}
-
-contract ERC20_ is Math {
+contract ERC20_ {
     // --- ERC20 Data ---
     string  public constant name = "Token";
     string  public constant symbol = "TKN";
@@ -53,6 +43,16 @@ contract ERC20_ is Math {
         emit Approval(msg.sender, usr, wad);
         return true;
     }
+
+    // --- Math ---
+    function add(uint x, uint y) internal pure returns (uint z) {
+        require((z = x + y) >= x);
+    }
+    function sub(uint x, uint y) internal pure returns (uint z) {
+        require((z = x - y) <= x);
+    }
+
+    function test() public virtual {}
 }
 
 contract ERC20Fee is ERC20_ {
@@ -63,8 +63,6 @@ contract ERC20Fee is ERC20_ {
     constructor(uint _totalSupply, uint _fee) ERC20_(_totalSupply) {
         fee = _fee;
     }
-
-    function test() public {}
 
     // --- Token ---
     function transferFrom(address src, address dst, uint wad) override public returns (bool) {
@@ -83,4 +81,6 @@ contract ERC20Fee is ERC20_ {
 
         return true;
     }
+
+    function test() public override {}
 }
