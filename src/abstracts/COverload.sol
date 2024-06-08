@@ -38,15 +38,15 @@ abstract contract COverload {
         uint256 gas,
         DelegationKey memory key,
         uint256 delta,
-        Delegation memory delegation,
         bytes calldata data,
-        bool strict
+        bool strict,
+        Delegation memory delegation
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterDelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, delegation, data)),
+                abi.encodeCall(IHOverload.afterDelegate, (msg.sender, key, delta, data, delegation)),
                 strict
             );
         }
@@ -102,13 +102,14 @@ abstract contract COverload {
         DelegationKey memory key,
         uint256 delta,
         bytes calldata data,
-        bool strict
+        bool strict,
+        uint256 index
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeUndelegating.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeUndelegating, (msg.sender, key, delta, data)),
+                abi.encodeCall(IHOverload.beforeUndelegating, (msg.sender, key, delta, data, index)),
                 strict
             );
         }
@@ -119,16 +120,16 @@ abstract contract COverload {
         uint256 gas,
         DelegationKey memory key,
         uint256 delta,
-        UndelegationKey memory ukey,
-        uint256 index,
         bytes calldata data,
-        bool strict
+        bool strict,
+        UndelegationKey memory ukey,
+        uint256 index
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.afterUndelegating.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, ukey, index, data)),
+                abi.encodeCall(IHOverload.afterUndelegating, (msg.sender, key, delta, data, ukey, index)),
                 strict
             );
         }
@@ -144,13 +145,14 @@ abstract contract COverload {
         UndelegationKey memory key,
         int256 position,
         bytes calldata data,
-        bool strict
+        bool strict,
+        uint256 index
     ) internal {
         if (ERC165Checker.supportsInterface(target, IHOverload.beforeDelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(IHOverload.beforeUndelegate, (msg.sender, key, position, data)),
+                abi.encodeCall(IHOverload.beforeUndelegate, (msg.sender, key, position, data, index)),
                 strict
             );
         }

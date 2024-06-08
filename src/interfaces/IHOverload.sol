@@ -11,7 +11,7 @@ interface IHOverload {
 
     function beforeDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data) external returns (bytes4);
 
-    function afterDelegate(address sender, DelegationKey memory key, uint256 delta, Delegation memory delegation, bytes calldata data) external returns (bytes4);
+    function afterDelegate(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, Delegation memory delegation) external returns (bytes4);
 
     /*//////////////////////////////////////////////////////////////
                                REDELEGATE
@@ -25,15 +25,15 @@ interface IHOverload {
                               UNDELEGATING
     //////////////////////////////////////////////////////////////*/    
 
-    function beforeUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data) external returns (bytes4);
+    function beforeUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, uint256 delegationIndex) external returns (bytes4);
 
-    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, UndelegationKey memory ukey, uint256 index, bytes calldata data) external returns (bytes4);
+    function afterUndelegating(address sender, DelegationKey memory key, uint256 delta, bytes calldata data, UndelegationKey memory ukey, uint256 undelegatingIndex) external returns (bytes4);
 
     /*//////////////////////////////////////////////////////////////
                                UNDELEGATE
     //////////////////////////////////////////////////////////////*/
 
-    function beforeUndelegate(address sender, UndelegationKey memory key, int256 position, bytes calldata data) external returns (bytes4);
+    function beforeUndelegate(address sender, UndelegationKey memory key, int256 position, bytes calldata data, uint256 index) external returns (bytes4);
 
     function afterUndelegate(address sender, UndelegationKey memory key, int256 position, bytes calldata data) external returns (bytes4);
 }
