@@ -12,7 +12,7 @@ import {Overload} from "../src/Overload.sol";
 import {ERC20Fee} from "./mocks/ERC20Fee.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 
-contract OverloadTest is Test {
+contract OverloadTest is EOverload, Test {
     using TokenIdLib for uint256;
     using TokenIdLib for address;
 
@@ -226,7 +226,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Deposit(address(0xBEEF), address(0xBEEF), address(token), 100);
+        emit Deposit(address(0xBEEF), address(0xBEEF), address(token), 100);
         overload.deposit(address(0xBEEF), address(token), 100);
 
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 100);
@@ -238,7 +238,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Deposit(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000);
+        emit Deposit(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000);
         overload.deposit(address(0xBEEF), address(tokenFee), 10_000);
 
         assertEq(overload.balanceOf(address(0xBEEF), address(tokenFee).convertToId()), 9_000);
@@ -258,7 +258,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Withdraw(address(0xBEEF), address(0xBEEF), address(token), 100, address(0xBEEF));
+        emit Withdraw(address(0xBEEF), address(0xBEEF), address(token), 100, address(0xBEEF));
         overload.withdraw(address(0xBEEF), address(token), 100, address(0xBEEF));
 
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
@@ -273,7 +273,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Withdraw(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000, address(0xBEEF));
+        emit Withdraw(address(0xBEEF), address(0xBEEF), address(tokenFee), 9_000, address(0xBEEF));
         overload.withdraw(address(0xBEEF), address(tokenFee), 9_000, address(0xBEEF));
 
         assertEq(overload.balanceOf(address(0xBEEF), address(tokenFee).convertToId()), 0);
@@ -330,7 +330,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 50, "", false, 0);
+        emit Delegate(key, 50, "", false, 0);
         bool success = overload.delegate(key, 50, "", false);
         assertEq(success, true);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
@@ -356,7 +356,7 @@ contract OverloadTest is Test {
         // first 50
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 50, "", false, 0);
+        emit Delegate(key, 50, "", false, 0);
         assertTrue(overload.delegate(key, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
@@ -368,7 +368,7 @@ contract OverloadTest is Test {
         // second 50, total 100
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 50, "", false, 0);
+        emit Delegate(key, 50, "", false, 0);
         assertTrue(overload.delegate(key, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
@@ -476,7 +476,7 @@ contract OverloadTest is Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Delegate(key, 100, abi.encodePacked(uint256(42)), true, 0);
+        emit Delegate(key, 100, abi.encodePacked(uint256(42)), true, 0);
         overload.delegate(key, 100, abi.encodePacked(uint256(42)), true);
     }
 
@@ -662,7 +662,7 @@ contract OverloadTest is Test {
             amount: 0,
             maturity: 0
         });
-        emit EOverload.Undelegating(key, 25, "", true, eukey, -1);
+        emit Undelegating(key, 25, "", true, eukey, -1);
         (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, 25, "", true));
         assertTrue(success);
         assertEq(ukey.owner, address(0));
@@ -965,7 +965,7 @@ contract OverloadTest is Test {
 
         vm.prank(address(0xCCCC));
         vm.expectEmit(true, true, true, true);
-        emit EOverload.Jail(address(0xCCCC), address(0xFFFF), 1 hours, block.timestamp + 1 hours);
+        emit Jail(address(0xCCCC), address(0xFFFF), 1 hours, block.timestamp + 1 hours);
         overload.jail(address(0xFFFF), 1 hours);
         vm.expectRevert(EOverload.Jailed.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);

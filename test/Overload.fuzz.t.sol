@@ -12,7 +12,7 @@ import {Overload} from "../src/Overload.sol";
 import {ERC20Fee} from "./mocks/ERC20Fee.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 
-contract OverloadFuzzTest is Test {
+contract OverloadFuzzTest is EOverload, Test {
     using TokenIdLib for uint256;
     using TokenIdLib for address;
 
@@ -49,7 +49,7 @@ contract OverloadFuzzTest is Test {
         } else {
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit EOverload.Deposit(owner, owner, address(token), amount);
+            emit Deposit(owner, owner, address(token), amount);
             assertTrue(overload.deposit(owner, address(token), amount));
         }
 
@@ -85,7 +85,7 @@ contract OverloadFuzzTest is Test {
         } else {
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit EOverload.Withdraw(owner, owner, address(token), withdrawAmount, recipient);
+            emit Withdraw(owner, owner, address(token), withdrawAmount, recipient);
             assertTrue(overload.withdraw(owner, address(token), withdrawAmount, recipient));
             
             assertEq(overload.balanceOf(owner, address(token).convertToId()), depositAmount - withdrawAmount);
@@ -126,7 +126,7 @@ contract OverloadFuzzTest is Test {
             // Delegate
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit EOverload.Delegate(key, amount, data, strict, 0);
+            emit Delegate(key, amount, data, strict, 0);
             assertTrue(overload.delegate(key, amount, data, strict));
 
             assertEq(overload.getDelegationsLength(owner, address(token)), 1);
