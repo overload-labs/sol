@@ -6,7 +6,7 @@
 </p>
 <br />
 
-This repository contains the core contract, `Overload.sol`, for Overload. The AVSs that build on top of `Overload.sol` is expected to implement the `IHOverload.sol` hook interace.
+This repository contains the core contract, `Overload.sol`, for Overload. The AVSs that build on top of `Overload.sol` is expected to implement the `HOverload.sol` hook interace.
 
 ## Usage
 
@@ -38,7 +38,8 @@ src/
 │  ├─ COverload.sol - "The hook call logic for Overload.sol"
 │  └─ Lock.sol - "Reentrancy guard"
 ├─ interfaces/
-│  ├─ IHOverload.sol - "Interface for AVSs that implement Overload.sol hooks"
+│  ├─ EOverload.sol - "Events and errors"
+│  ├─ HOverload.sol - "Hooks that consensus contracts can implement"
 │  └─ IOverload.sol - "Interface for Overload.sol"
 ├─ libraries/
 │  ├─ types/
@@ -54,8 +55,16 @@ src/
 
 test/
 ├─ mocks/
+│  ├─ avs/
+│  │  ├─ Checkpoint.sol - "A checkpointing library for token balances"
+│  │  └─ COnsensusMirrorMock.sol - "Mirrors the values from Overload.sol, and keeps track of validator and pool balances."
+│  ├─ ConsensusMock.sol - "Different variations of consensus mocks to be used in tests"
+│  └─ ERC20Fee.sol
+│  └─ ERC20Mock.sol
 ├─ Overoad.consensus.t.sol - "Test malicious consensus contracts."
-└─ Overload.t.sol - "Test Overload.sol generally"
+├─ Overoad.fuzz.t.sol - "Fuzz tests"
+├─ Overload.t.sol - "General tests"
+└─ TokenIdLib.t.sol
 ```
 
 ## Overview
