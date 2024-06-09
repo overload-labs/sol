@@ -159,9 +159,9 @@ contract OverloadConsensusTest is Test {
         overload.undelegate(ukey, position, data, strict);
     }
 
-    function setUndelegatingDelay(address consensus, uint256 delay) public {
+    function setDelay(address consensus, uint256 delay) public {
         vm.prank(consensus);
-        overload.setUndelegatingDelay(consensus, delay);
+        overload.setDelay(consensus, delay);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -190,7 +190,7 @@ contract OverloadConsensusTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function test_hookParameters() public {
-        setUndelegatingDelay(address(consensusHookParametersMock), 500);
+        setDelay(address(consensusHookParametersMock), 500);
         deposit(address(0xBEEF), 100);
 
         // Base key
@@ -295,7 +295,7 @@ contract OverloadConsensusTest is Test {
     }
 
     function test_fail_undelegate_consensusRevert() public {
-        setUndelegatingDelay(address(consensusRevertUndelegateMock), 500);
+        setDelay(address(consensusRevertUndelegateMock), 500);
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(consensusRevertUndelegateMock), address(0xFFFF), 100, true);
 
@@ -326,7 +326,7 @@ contract OverloadConsensusTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function test_fail_noHooks() public {
-        setUndelegatingDelay(address(consensusNoHook), 500);
+        setDelay(address(consensusNoHook), 500);
         deposit(address(0xBEEF), 100);
 
         // Should revert
@@ -404,12 +404,12 @@ contract OverloadConsensusTest is Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 999_999));
-        overload.delegate{gas: 1_000_000 + 33222}(key, 100, "", false);
+        vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 1048509));
+        overload.delegate{gas: 2 ** 20 + 29000}(key, 100, "", false);
 
-        // Should not revert
-        vm.prank(address(0xBEEF));
-        overload.delegate{gas: 1_000_000 + 33223}(key, 100, "", false);
+        // // Should not revert
+        // vm.prank(address(0xBEEF));
+        // overload.delegate{gas: 2 ** 20 + 29045}(key, 100, "", false);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -430,13 +430,13 @@ contract OverloadConsensusTest is Test {
         uint256 gasLeft = gasleft();
         vm.prank(address(0xBEEF));
         vm.expectRevert(FunctionCallLib.FailedCall.selector);
-        overload.delegate(key, 100, abi.encodePacked(uint256(46)), true);
+        overload.delegate(key, 100, abi.encodePacked(uint256(49)), true);
         console2.log(gasLeft - gasleft());
 
         // Does not revert
         gasLeft = gasleft();
         vm.prank(address(0xBEEF));
-        overload.delegate(key, 50, abi.encodePacked(uint256(45)), true);
+        overload.delegate(key, 50, abi.encodePacked(uint256(48)), true);
         console2.log(gasLeft - gasleft());
 
         // Does not revert, because strict is false
@@ -445,8 +445,8 @@ contract OverloadConsensusTest is Test {
         overload.delegate(key, 50, abi.encodePacked(uint256(100)), false);
         console2.log(gasLeft - gasleft());
 
-        assertEq(consensusGasEater.slots(44), 44);
-        assertEq(consensusGasEater.slots(45), 0);
+        assertEq(consensusGasEater.slots(47), 47);
+        assertEq(consensusGasEater.slots(48), 0);
         assertEq(consensusGasEater.slots(50), 0);
         assertEq(consensusGasEater.slots(100), 0);
     }

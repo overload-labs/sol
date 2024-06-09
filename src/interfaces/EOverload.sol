@@ -12,8 +12,12 @@ interface EOverload {
 
     /// @notice Emitted when undelegating delay changes for a consensus contract.
     /// @param consensus The consensus contract, also the caller.
-    /// @param cooldown The new cooldown value.
-    event SetUndelegatingDelay(address indexed consensus, uint256 cooldown);
+    /// @param delay The new delay value, in seconds.
+    event SetDelay(address indexed consensus, uint256 delay);
+    /// @notice Emitted when `jail` cooldown changes for a consensus contract.
+    /// @param consensus The consensus contract, also the caller.
+    /// @param cooldown The new cooldown value, in seconds.
+    event SetCooldown(address indexed consensus, uint256 cooldown);
     /// @notice Emitted when a user deposits ERC-20 tokens into the contract, using the `deposit` function.
     /// @param caller The function caller.
     /// @param owner The owner of the deposit.
@@ -91,6 +95,10 @@ interface EOverload {
 
     /// @notice Thrown when the parameter exceeds the max allowed delay.
     error ValueExceedsMaxDelay();
+    /// @notice Thrown when the parameter exceeds the max allowed cooldown.
+    error ValueExceedsMaxCooldown();
+    /// @notice Thrown when the parameter is below the min allowed cooldown.
+    error ValueBelowMinCooldown();
     /// @notice Thrown when the parameter exceeds the max allowed jailtime.
     error ValueExceedsMaxJailtime();
     /// @notice Thrown when max delegations are reached.

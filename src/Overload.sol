@@ -27,38 +27,46 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     using UndelegationLib for mapping(address owner => mapping(address token => Undelegation[]));
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IOverload
+    uint256 public constant GAS_BUDGET = 2 ** 20; // 1_048_576
+    /// @inheritdoc IOverload
+    uint256 public constant MAX_DELEGATIONS = 2 ** 8; // 256
+    /// @inheritdoc IOverload
+    uint256 public constant MAX_UNDELEGATIONS = 2 ** 8; // 256
+
+    /// @inheritdoc IOverload
+    uint256 public constant MAX_DELAY = 604_800; // 7 days
+
+    /// @inheritdoc IOverload
+    uint256 public constant MIN_COOLDOWN = 14_400; // 4 hours
+    /// @inheritdoc IOverload
+    uint256 public constant MAX_COOLDOWN = 604_800; // 7 days
+
+    /// @inheritdoc IOverload
+    uint256 public constant MAX_JAILTIME = 604_800; // 7 days
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice The gas budget that a hook call has.
-    /// @dev A hook not consuming withing the budget can lead to unexpected behaviours on the consensus contracts. It's
-    ///     important that the implemented hooks stay within good margin of the gas budget.
-    uint256 public gasBudget = 1_000_000;
-    /// @dev The max delegations allowed per token.
-    uint256 public maxDelegations = 256;
-    /// @dev The max undelegations allowed per token.
-    uint256 public maxUndelegations = 32;
-    /// @dev The max undelegation delay allowed for a consensus contract.
-    uint256 public maxUndelegatingDelay = 604_800; // 7 days
-    /// @dev The jail cooldown, before `jail` can be called again on a (consensus, validator) pair.
-    uint256 public jailCooldown = 86_400; // 1 day
-    /// @dev The max jailtime for a (consensus, validator) pair.
-    uint256 public maxJailTime = 604_800; // 7 days
-
-    /// @dev The amount of tokens bonded for a user.
-    mapping(address owner => mapping(address token => uint256 amount)) public bonded;
-    /// @dev Whether a user has delegated a token to a consensus contract already or not.
-    /// @dev As delegations are unique per token, this prevents duplicates.
-    mapping(address owner => mapping(address token => mapping(address consensus => bool))) public delegated;
-    /// @dev The delegations array, for each token.
-    mapping(address owner => mapping(address token => Delegation[])) public delegations;
-    /// @dev The undelegations array, for each token.
-    mapping(address owner => mapping(address token => Undelegation[])) public undelegations;
-
-    /// @dev The undelegating delay, per consensus contract.
-    mapping(address consensus => uint256 delay) public undelegatingDelay;
-    /// @dev The jailed validators, per consensus contract.
+    /// @inheritdoc IOverload
+    mapping(address consensus => uint256 delay) public delays;
+    /// @inheritdoc IOverload
+    mapping(address consensus => uint256 cooldown) public cooldowns;
+    /// @inheritdoc IOverload
     mapping(address consensus => mapping(address validator => uint256 timestamp)) public jailed;
+
+    /// @inheritdoc IOverload
+    mapping(address owner => mapping(address token => uint256 amount)) public bonded;
+    /// @inheritdoc IOverload
+    mapping(address owner => mapping(address token => mapping(address consensus => bool))) public delegated;
+    /// @notice The mapping for delegations arrays.
+    mapping(address owner => mapping(address token => Delegation[])) public delegations;
+    /// @notice The mapping for undelegations arrays.
+    mapping(address owner => mapping(address token => Undelegation[])) public undelegations;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           VIEWS                            */
@@ -125,13 +133,26 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IOverload
-    function setUndelegatingDelay(address consensus, uint256 delay) public lock returns (bool) {
+    function setDelay(address consensus, uint256 delay) public lock returns (bool) {
         require(msg.sender == consensus || isOperator[consensus][msg.sender], Unauthorized());
-        require(delay <= maxUndelegatingDelay, ValueExceedsMaxDelay());
+        require(delay <= MAX_DELAY, ValueExceedsMaxDelay());
 
-        undelegatingDelay[consensus] = delay;
+        delays[consensus] = delay;
 
-        emit SetUndelegatingDelay(consensus, delay);
+        emit SetDelay(consensus, delay);
+
+        return true;
+    }
+
+    /// @inheritdoc IOverload
+    function setCooldown(address consensus, uint256 cooldown) public lock returns (bool) {
+        require(msg.sender == consensus || isOperator[consensus][msg.sender], Unauthorized());
+        require(cooldown <= MAX_COOLDOWN, ValueExceedsMaxCooldown());
+        require(cooldown >= MIN_COOLDOWN, ValueBelowMinCooldown());
+
+        cooldowns[consensus] = cooldown;
+
+        emit SetCooldown(consensus, cooldown);
 
         return true;
     }
@@ -189,10 +210,10 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
         require(delta > 0, Zero());
         // Check below max delegations amount
-        require(delegations[key.owner][key.token].length < maxDelegations, MaxDelegationsReached());
+        require(delegations[key.owner][key.token].length < MAX_DELEGATIONS, MaxDelegationsReached());
 
         // Before hook call
-        _beforeDelegateHook(key.consensus, gasBudget, key, delta, data, strict);
+        _beforeDelegateHook(key.consensus, GAS_BUDGET, key, delta, data, strict);
 
         uint256 balance = balanceOf[key.owner][key.token.convertToId()] + bonded[key.owner][key.token];
 
@@ -221,7 +242,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
 
         // After hook call
-        _afterDelegateHook(key.consensus, gasBudget, key, delta, data, strict, delegation, index);
+        _afterDelegateHook(key.consensus, GAS_BUDGET, key, delta, data, strict, delegation, index);
 
         emit Delegate(key, delta, data, strict, index);
 
@@ -245,12 +266,12 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(index >= 0, NotFound());
 
         // Before hook
-        _beforeRedelegateHook(from.consensus, gasBudget, from, to, data, strict);
+        _beforeRedelegateHook(from.consensus, GAS_BUDGET, from, to, data, strict);
 
         delegations[from.owner][from.token][index.u256()].validator = to.validator;
 
         // After hook
-        _afterRedelegateHook(from.consensus, gasBudget, from, to, data, strict);
+        _afterRedelegateHook(from.consensus, GAS_BUDGET, from, to, data, strict);
 
         emit Redelegate(from, to, data, strict);
 
@@ -268,7 +289,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
         require(delta > 0, Zero());
         require(delegated[key.owner][key.token][key.consensus], NotDelegated());
-        require(undelegations[key.owner][key.token].length < maxUndelegations, MaxUndelegationsReached());
+        require(undelegations[key.owner][key.token].length < MAX_UNDELEGATIONS, MaxUndelegationsReached());
 
         // Strictly get delegation and check parameters against it
         (Delegation memory delegation, int256 index) = delegations.get(key, true);
@@ -281,7 +302,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(jailed[key.consensus][key.validator] <= block.timestamp, Jailed());
 
         // Non-strict hook call
-        _beforeUndelegatingHook(key.consensus, gasBudget, key, delta, data, strict, index.u256());
+        _beforeUndelegatingHook(key.consensus, GAS_BUDGET, key, delta, data, strict, index.u256());
 
         // Update the delegation
         if (delta == delegation.amount) {
@@ -292,7 +313,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
 
         // Push new undelegation
-        if (undelegatingDelay[key.consensus] > 0) {
+        if (delays[key.consensus] > 0) {
             // Add undelegation object if there's cooldown for the consensus contract
             undelegationKey = UndelegationKey({
                 owner: key.owner,
@@ -300,7 +321,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
                 consensus: key.consensus,
                 validator: key.validator,
                 amount: delta,
-                maturity: block.timestamp + undelegatingDelay[key.consensus]
+                maturity: block.timestamp + delays[key.consensus]
             });
             insertIndex = undelegations.add(undelegationKey).i256();
         } else {
@@ -312,7 +333,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
 
         // Non-strict hook call
-        _afterUndelegatingHook(key.consensus, gasBudget, key, delta, data, strict, undelegationKey, insertIndex);
+        _afterUndelegatingHook(key.consensus, GAS_BUDGET, key, delta, data, strict, undelegationKey, insertIndex);
 
         emit Undelegating(key, delta, data, strict, undelegationKey, insertIndex);
 
@@ -339,13 +360,13 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(index >= 0, Fatal());
 
         // Non-strict hook call
-        _beforeUndelegateHook(key.consensus, gasBudget, key, position, data, strict, index.u256());
+        _beforeUndelegateHook(key.consensus, GAS_BUDGET, key, position, data, strict, index.u256());
 
         undelegations.remove(key, index.u256());
         _bondUpdate(key.owner, key.token);
 
         // Non-strict hook call
-        _afterUndelegateHook(key.consensus, gasBudget, key, position, data, strict);
+        _afterUndelegateHook(key.consensus, GAS_BUDGET, key, position, data, strict);
 
         emit Undelegate(key, position, data, strict);
 
@@ -358,13 +379,15 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
 
     /// @inheritdoc IOverload
     function jail(address validator, uint256 jailtime) public lock returns (bool) {
-        // A validator cannot be continously jailed, a minimum cooldown is required.
-        require(jailed[msg.sender][validator] + jailCooldown <= block.timestamp, JailOnCooldown());
-        require(jailtime <= maxJailTime, ValueExceedsMaxJailtime());
+        // Cooldown prevents continuous jailing.
+        uint256 cooldown = (cooldowns[msg.sender] >= MIN_COOLDOWN && cooldowns[msg.sender] <= MAX_COOLDOWN)
+            ? cooldowns[msg.sender]
+            : MIN_COOLDOWN;
+        require(jailed[msg.sender][validator] + cooldown <= block.timestamp, JailOnCooldown());
+        require(jailtime <= MAX_JAILTIME, ValueExceedsMaxJailtime());
+        require(jailtime > 0, Zero());
 
-        if (jailtime > 0) {
-            jailed[msg.sender][validator] = block.timestamp + jailtime;
-        }
+        jailed[msg.sender][validator] = block.timestamp + jailtime;
 
         emit Jail(msg.sender, validator, jailtime, block.timestamp + jailtime);
 

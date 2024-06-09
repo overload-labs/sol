@@ -127,9 +127,9 @@ contract OverloadTest is Test {
         overload.undelegate(ukey, position, data, strict);
     }
 
-    function setUndelegatingDelay(address consensus, uint256 delay) public {
+    function setDelay(address consensus, uint256 delay) public {
         vm.prank(consensus);
-        overload.setUndelegatingDelay(consensus, delay);
+        overload.setDelay(consensus, delay);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -176,7 +176,7 @@ contract OverloadTest is Test {
      */
 
     function test_getUndelegations() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
+        setDelay(address(0xCCCC), 500);
         deposit(address(0xBEEF), 1e18);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1e18, true);
 
@@ -642,7 +642,7 @@ contract OverloadTest is Test {
                               UNDELEGATING
     //////////////////////////////////////////////////////////////*/
 
-    function test_undelegating_noUndelegatingDelay() public {
+    function test_undelegating_noDelay() public {
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
 
@@ -694,8 +694,8 @@ contract OverloadTest is Test {
         assertEq(overload.bonded(address(0xBEEF), address(token)), 0);
     }
 
-    function test_undelegating_withUndelegatingDelay() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
+    function test_undelegating_withDelay() public {
+        setDelay(address(0xCCCC), 500);
 
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
@@ -727,7 +727,7 @@ contract OverloadTest is Test {
     }
 
     function test_undelegating_whenMultipleDelegationsExist() public {
-        setUndelegatingDelay(address(0xC), 500);
+        setDelay(address(0xC), 500);
 
         deposit(tokenA, address(0xBEEF), 100);
         deposit(tokenB, address(0xBEEF), 100);
@@ -765,9 +765,9 @@ contract OverloadTest is Test {
     }
 
     function test_undelegating_multipleUndelegationsWithDuplicates() public {
-        setUndelegatingDelay(address(0xA), 500);
-        setUndelegatingDelay(address(0xB), 500);
-        setUndelegatingDelay(address(0xC), 500);
+        setDelay(address(0xA), 500);
+        setDelay(address(0xB), 500);
+        setDelay(address(0xC), 500);
 
         deposit(tokenA, address(0xBEEF), 100);
 
@@ -814,7 +814,7 @@ contract OverloadTest is Test {
         vm.expectRevert(EOverload.Overflow.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 101, true);
 
-        setUndelegatingDelay(address(0xCCCC), 500);
+        setDelay(address(0xCCCC), 500);
         vm.expectRevert(EOverload.Overflow.selector);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 101, true);
     }
@@ -860,11 +860,11 @@ contract OverloadTest is Test {
     }
 
     function test_fail_undelegating_maxUndelegations() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
-        deposit(address(0xBEEF), 1000);
-        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1000, true);
+        setDelay(address(0xCCCC), 500);
+        deposit(address(0xBEEF), 1e18);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1e18, true);
 
-        for (uint256 i = 0; i < 32; i++) {
+        for (uint256 i = 0; i < 256; i++) {
             undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 10, true);
         }
 
@@ -877,7 +877,7 @@ contract OverloadTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function test_undelegate() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
+        setDelay(address(0xCCCC), 500);
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
 
@@ -899,7 +899,7 @@ contract OverloadTest is Test {
     }
 
     function test_undelegate_noIndex() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
+        setDelay(address(0xCCCC), 500);
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
         (, UndelegationKey memory ukey, ) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
@@ -909,7 +909,7 @@ contract OverloadTest is Test {
     }
 
     function test_fail_undelegate_nonMaturedDelegation() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
+        setDelay(address(0xCCCC), 500);
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
         (, UndelegationKey memory ukey, ) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
@@ -920,7 +920,7 @@ contract OverloadTest is Test {
     }
 
     function test_fail_undelegate_indexOutOfBounds() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
+        setDelay(address(0xCCCC), 500);
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
         (, UndelegationKey memory ukey, ) = undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
@@ -930,7 +930,7 @@ contract OverloadTest is Test {
     }
 
     function test_fail_undelegate_undelegationNotFound() public {
-        setUndelegatingDelay(address(0xCCCC), 500);
+        setDelay(address(0xCCCC), 500);
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
         undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1, true);
@@ -987,6 +987,7 @@ contract OverloadTest is Test {
 
         // Jail
         vm.prank(address(0xCCCC));
+        vm.expectRevert(EOverload.Zero.selector);
         overload.jail(address(0xFFFF), 0);
 
         // Try undelegating successfully
@@ -1001,6 +1002,7 @@ contract OverloadTest is Test {
 
         // Jail zero
         vm.prank(address(0xCCCC));
+        vm.expectRevert(EOverload.Zero.selector);
         overload.jail(address(0xFFFF), 0);
 
         // Try undelegating successfully

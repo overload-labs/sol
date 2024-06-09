@@ -6,6 +6,50 @@ import {Undelegation, UndelegationKey} from "../libraries/types/Undelegation.sol
 
 /// @title IOverload (Overload Interface)
 interface IOverload {
+    /// @notice Returns the total gas budget that a hook call has.
+    /// @dev A hook not consuming withing the budget can lead to unexpected behaviours on the consensus contracts. It's
+    ///     important that the implemented hooks stay within good margin of the gas budget.
+    function GAS_BUDGET() external pure returns (uint256);
+
+    /// @notice Returns the max delegations allowed per token.
+    function MAX_DELEGATIONS() external pure returns (uint256);
+
+    /// @notice Returns the max undelegations allowed per token.
+    function MAX_UNDELEGATIONS() external pure returns (uint256);
+
+    /// @notice Returns the max `undelegating` delay allowed for a consensus contract.
+    function MAX_DELAY() external pure returns (uint256);
+
+    /// @notice Returns the min possible set jail cooldown.
+    /// @dev The amount of seconds before `jail` can be called again on a (consensus, validator) pair.
+    function MIN_COOLDOWN() external pure returns (uint256);
+
+    /// @notice Returns the max possible set jail cooldown.
+    /// @dev The amount of seconds before `jail` can be called again on a (consensus, validator) pair.
+    function MAX_COOLDOWN() external pure returns (uint256);
+
+    /// @notice Returns the max possible set jailtime for a (consensus, validator) pair.
+    function MAX_JAILTIME() external pure returns (uint256);
+
+    /// @notice Returns the `undelegating` delay in seconds, per consensus contract.
+    function delays(address consensus) external view returns (uint256 delay);
+
+    /// @notice Returns the `jail` cooldown in seconds, per consensus contract.
+    /// @dev The amount of seconds until `jail` can be called again on a validator.
+    /// @dev If the cooldown value is zero, then the `minCooldown` value will be used, as cooldown can never be zero.
+    ///    The value cannot be zero to avoid the infinite jailing soft-lock that would otherwise be possible for asests.
+    function cooldowns(address consensus) external view returns (uint256 cooldown);
+
+    /// @notice Returns the jail maturity for validators, per consensus contract.
+    function jailed(address consensus, address validator) external view returns (uint256 maturity);
+
+    /// @notice Returns the amount of bonded tokens for a user.
+    function bonded(address owner, address token) external view returns (uint256);
+
+    /// @notice Returns whether a user has delegated a token to a consensus contract already or not.
+    /// @dev As delegations are unique per token, this prevents duplicates.
+    function delegated(address owner, address token, address consensus) external view returns (bool);
+
     /// @notice Returns the length of the delegations array.
     /// @param owner The owner of the delegations.
     /// @param token The token used for the delegations array.
@@ -46,15 +90,24 @@ interface IOverload {
     /// @param key The key of the undelegation in the undelegations array.
     function getUndelegation(UndelegationKey memory key) external view returns (Undelegation memory undelegation);
 
-    /// @notice Sets the undelegation delay for a consensus contract.
-    /// @dev If delay is larger than zero, then a user will need to wait `delay` seconds before being able to call
+    /// @notice Sets the `undelegating` delay for a consensus contract.
+    /// @dev If delay is greater than zero, then a user will need to wait `delay` seconds before being able to call
     ///     `undelegate` after having just called `undelegating`.
     ///     If delay is set to zero, then calling `undelegating` will instantly remove the delegation object with no
-    ///     side effects.
+    ///     side effects, hence no further `undelegate` calls would be needed after calling `undelegating`.
     /// @param consensus The consensus contract.
-    /// @param delay The delay to set for the consensus contract.
+    /// @param delay The delay in seconds to set for the consensus contract.
     /// @return Must return true.
-    function setUndelegatingDelay(address consensus, uint256 delay) external returns (bool);
+    function setDelay(address consensus, uint256 delay) external returns (bool);
+
+    /// @notice Sets the jail cooldown for a consensus contract.
+    /// @dev The value settable is bounded by `MIN_COOLDOWN` and `MAX_COOLDOWN` constants.
+    /// @dev The cooldown value prevents a validator from being continuously jailed, which would otherwise open up the
+    ///     opportunity for soft-locking assets inside the contract. With cooldown, there's a window in which validators
+    ///     and restakers can call `undelegating` on their delegations that exist on an e.g. consensus contract with a
+    ///     bug or an malicious consensus contract.
+    /// @return Must return true.
+    function setCooldown(address consensus, uint256 cooldown) external returns (bool);
 
     /// @notice Allows the user to deposit any ERC-20 token into the contract.
     /// @dev Should support fee-on-transfer tokens, but does not support rebasing tokens.

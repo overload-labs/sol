@@ -50,8 +50,8 @@ contract ConsensusMirror {
      * Overload Admin
      */
 
-    function setUndelegatingDelay(uint256 delay) public {
-        Overload(overload).setUndelegatingDelay(address(this), delay);
+    function setDelay(uint256 delay) public {
+        Overload(overload).setDelay(address(this), delay);
     }
 
     /*//////////////////////////////////////////////////////////////
