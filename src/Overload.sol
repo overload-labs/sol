@@ -250,7 +250,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         // After hook call
         _afterDelegateHook(key.consensus, GAS_BUDGET, key, position, amount, data, strict, delegation, index);
 
-        emit Delegate(key, position, amount, data, strict, index);
+        emit Delegate(msg.sender, key, position, amount, data, strict, index);
 
         return true;
     }
@@ -281,7 +281,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         // After hook
         _afterRedelegateHook(from.consensus, GAS_BUDGET, from, to, position, data, strict, index);
 
-        emit Redelegate(from, to, position, data, strict, index);
+        emit Redelegate(msg.sender, from, to, position, data, strict, index);
 
         return true;
     }
@@ -345,7 +345,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         // Non-strict hook call
         _afterUndelegatingHook(key.consensus, GAS_BUDGET, key, position, amount, data, strict, undelegationKey, insertIndex);
 
-        emit Undelegating(key, position, amount, data, strict, undelegationKey, insertIndex);
+        emit Undelegating(msg.sender, key, position, amount, data, strict, undelegationKey, insertIndex);
 
         return (true, undelegationKey, insertIndex);
     }
@@ -383,7 +383,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         // Non-strict hook call
         _afterUndelegateHook(key.consensus, GAS_BUDGET, key, position, data, strict);
 
-        emit Undelegate(key, position, data, strict);
+        emit Undelegate(msg.sender, key, position, data, strict);
 
         return true;
     }

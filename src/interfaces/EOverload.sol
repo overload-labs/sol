@@ -31,32 +31,36 @@ interface EOverload {
     /// @param amount The amount withdrawn.
     event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);
     /// @notice Emitted when a delegation object is created.
+    /// @param caller The function caller.
     /// @param key The delegation key.
     /// @param position The index of the delegation object, or `-1` to find the delegation at runtime.
     /// @param amount The amount of tokens to delegate.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Delegate(DelegationKey indexed key, int256 position, uint256 amount, bytes data, bool strict, uint256 index);
+    event Delegate(address indexed caller, DelegationKey indexed key, int256 position, uint256 amount, bytes data, bool strict, uint256 index);
     /// @notice Emitted when a delegation has its validator value changed.
+    /// @param caller The function caller.
     /// @param from The delegation key before the change.
     /// @param to The delegation key after the change.
     /// @param position The index of the delegation object, or `-1` to find the delegation at runtime.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Redelegate(DelegationKey indexed from, DelegationKey indexed to, int256 position, bytes data, bool strict, uint256 index);
+    event Redelegate(address indexed caller, DelegationKey indexed from, DelegationKey indexed to, int256 position, bytes data, bool strict, uint256 index);
     /// @notice Emitted when `undelegating` is called. An undelgation object can be created depending on if delay exists.
+    /// @param caller The function caller.
     /// @param key The delegation key for the delegation object to transition into an undelegation.
     /// @param amount The amount of tokens to reduce from the delegation. If full amount is entered, the delegation
     ///     object is removed.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Undelegating(DelegationKey indexed key, int256 position, uint256 amount, bytes data, bool strict, UndelegationKey ukey,  int256 index);
+    event Undelegating(address indexed caller, DelegationKey indexed key, int256 position, uint256 amount, bytes data, bool strict, UndelegationKey ukey,  int256 index);
     /// @notice Emitted when `undelegate` is called and an undelegatino is removed.
+    /// @param caller The function caller.
     /// @param key The undelegation key that can be used to find a generic undelegation object.
     /// @param position The assumed position of the undelegation object. Enter `-1` to loop through `undelegations`.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Undelegate(UndelegationKey indexed key, int256 position, bytes data, bool strict);
+    event Undelegate(address indexed caller, UndelegationKey indexed key, int256 position, bytes data, bool strict);
     /// @notice Emitted when a validator is jailed.
     /// @param consensus The consensus contract in which the validator is jailed for.
     /// @param validator The jailed validator.

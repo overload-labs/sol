@@ -404,7 +404,7 @@ contract OverloadConsensusTest is Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 1048480));
+        vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 1048483));
         overload.delegate{gas: 2 ** 20 + 29550}(key, -1, 100, "", false);
 
         // // Should not revert
