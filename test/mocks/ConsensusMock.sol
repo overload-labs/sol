@@ -14,28 +14,28 @@ contract ConsensusHookParametersMock is HOverload {
         token = token_;
     }
 
-    function beforeDelegate(address sender, DelegationKey memory key, int256 position, uint256 delta, bytes calldata data, bool strict) public view returns (bytes4) {
+    function beforeDelegate(address sender, DelegationKey memory key, int256 position, uint256 amount, bytes calldata data, bool strict) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
         require(key.consensus == address(this));
         require(key.validator == address(0xFFFF));
         require(position == -1);
-        require(delta == 100);
+        require(amount == 100);
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
 
         return HOverload.beforeDelegate.selector;
     }
 
-    function afterDelegate(address sender, DelegationKey memory key, int256 position, uint256 delta, bytes calldata data, bool strict, Delegation memory delegation, uint256 index) public view returns (bytes4) {
+    function afterDelegate(address sender, DelegationKey memory key, int256 position, uint256 amount, bytes calldata data, bool strict, Delegation memory delegation, uint256 index) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
         require(key.consensus == address(this));
         require(key.validator == address(0xFFFF));
         require(position == -1);
-        require(delta == 100);
+        require(amount == 100);
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
         require(delegation.consensus == address(this));
@@ -56,6 +56,7 @@ contract ConsensusHookParametersMock is HOverload {
         require(to.token == address(token));
         require(to.consensus == address(this));
         require(to.validator == address(0xEEEE));
+        require(position == -1);
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
 
@@ -72,19 +73,21 @@ contract ConsensusHookParametersMock is HOverload {
         require(to.token == address(token));
         require(to.consensus == address(this));
         require(to.validator == address(0xEEEE));
+        require(position == -1);
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
 
         return HOverload.afterRedelegate.selector;
     }
 
-    function beforeUndelegating(address sender, DelegationKey memory key, int256 position, uint256 delta, bytes calldata data, bool strict, uint256 index) public view returns (bytes4) {
+    function beforeUndelegating(address sender, DelegationKey memory key, int256 position, uint256 amount, bytes calldata data, bool strict, uint256 index) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
         require(key.consensus == address(this));
         require(key.validator == address(0xEEEE));
-        require(delta == 100);
+        require(position == -1);
+        require(amount == 100);
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
         require(index == 0);
@@ -92,13 +95,14 @@ contract ConsensusHookParametersMock is HOverload {
         return HOverload.beforeUndelegating.selector;
     }
 
-    function afterUndelegating(address sender, DelegationKey memory key, int256 position, uint256 delta, bytes calldata data, bool strict, UndelegationKey memory ukey, int256 index) public view returns (bytes4) {
+    function afterUndelegating(address sender, DelegationKey memory key, int256 position, uint256 amount, bytes calldata data, bool strict, UndelegationKey memory ukey, int256 index) public view returns (bytes4) {
         require(sender == address(0xBEEF));
         require(key.owner == address(0xBEEF));
         require(key.token == address(token));
         require(key.consensus == address(this));
         require(key.validator == address(0xEEEE));
-        require(delta == 100);
+        require(position == -1);
+        require(amount == 100);
         require(keccak256(data) == keccak256(hex"42"));
         require(strict == true);
         require(ukey.owner == address(0xBEEF));

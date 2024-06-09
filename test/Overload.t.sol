@@ -342,6 +342,30 @@ contract OverloadTest is EOverload, Test {
         assertTrue(overload.delegated(address(0xBEEF), address(token), address(0xCCCC)));
     }
 
+    function test_delegate_position() public {
+        deposit(address(0xBEEF), 100);
+
+        delegate(address(0xBEEF), address(0xA), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xB), address(0x2), 50, true);
+        delegate(address(0xBEEF), address(0xC), address(0x3), 50, true);
+        delegate(address(0xBEEF), address(0xD), address(0x4), 50, true);
+        delegate(address(0xBEEF), address(0xE), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xF), address(0x1), 50, true);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xD),
+            validator: address(0x4)
+        });
+        vm.prank(address(0xBEEF));
+        overload.delegate(key, 3, 25, "", true);
+
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 3).consensus, address(0xD));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 3).validator, address(0x4));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 3).amount, 75);
+    }
+
     // Should delegate to same consensus and validator multiple times
     function test_delegate_multiple() public {
         deposit(address(0xBEEF), 100);
@@ -478,6 +502,27 @@ contract OverloadTest is EOverload, Test {
         vm.expectEmit(true, true, true, true);
         emit Delegate(address(0xBEEF), key, -1, 100, abi.encodePacked(uint256(42)), true, 0);
         overload.delegate(key, -1, 100, abi.encodePacked(uint256(42)), true);
+    }
+
+    function test_fail_delegate_wrongPositionParameter() public {
+        deposit(address(0xBEEF), 100);
+
+        delegate(address(0xBEEF), address(0xA), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xB), address(0x2), 50, true);
+        delegate(address(0xBEEF), address(0xC), address(0x3), 50, true);
+        delegate(address(0xBEEF), address(0xD), address(0x4), 50, true);
+        delegate(address(0xBEEF), address(0xE), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xF), address(0x1), 50, true);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xD),
+            validator: address(0x4)
+        });
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(DelegationLib.MismatchConsensus.selector, address(0xD), address(0xC)));
+        overload.delegate(key, 2, 25, "", true);
     }
 
     // Should fail to delegate to two different validators for a single consensus address
@@ -642,6 +687,30 @@ contract OverloadTest is EOverload, Test {
                               UNDELEGATING
     //////////////////////////////////////////////////////////////*/
 
+    function test_undelegating_position() public {
+        deposit(address(0xBEEF), 100);
+
+        delegate(address(0xBEEF), address(0xA), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xB), address(0x2), 50, true);
+        delegate(address(0xBEEF), address(0xC), address(0x3), 50, true);
+        delegate(address(0xBEEF), address(0xD), address(0x4), 50, true);
+        delegate(address(0xBEEF), address(0xE), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xF), address(0x1), 50, true);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xD),
+            validator: address(0x4)
+        });
+        vm.prank(address(0xBEEF));
+        overload.undelegating(key, 3, 25, "", true);
+
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 3).consensus, address(0xD));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 3).validator, address(0x4));
+        assertEq(overload.getDelegation(address(0xBEEF), address(token), 3).amount, 25);
+    }
+
     function test_undelegating_noDelay() public {
         deposit(address(0xBEEF), 100);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 50, true);
@@ -786,6 +855,27 @@ contract OverloadTest is EOverload, Test {
         undelegating(tokenA, address(0xBEEF), address(0xC), address(0x3), 10, true);
 
         assertEq(overload.getUndelegationLength(address(0xBEEF), address(tokenA)), 6);
+    }
+
+    function test_fail_undelegating_wrongPositionParameter() public {
+        deposit(address(0xBEEF), 100);
+
+        delegate(address(0xBEEF), address(0xA), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xB), address(0x2), 50, true);
+        delegate(address(0xBEEF), address(0xC), address(0x3), 50, true);
+        delegate(address(0xBEEF), address(0xD), address(0x4), 50, true);
+        delegate(address(0xBEEF), address(0xE), address(0x1), 50, true);
+        delegate(address(0xBEEF), address(0xF), address(0x1), 50, true);
+
+        DelegationKey memory key = DelegationKey({
+            owner: address(0xBEEF),
+            token: address(token),
+            consensus: address(0xD),
+            validator: address(0x4)
+        });
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(abi.encodeWithSelector(DelegationLib.MismatchConsensus.selector, address(0xD), address(0xC)));
+        overload.undelegating(key, 2, 25, "", true);
     }
 
     function test_fail_undelegating_nonExistentDelegation() public {
