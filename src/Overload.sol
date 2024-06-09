@@ -31,11 +31,11 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IOverload
-    uint256 public constant GAS_BUDGET = 2 ** 20; // 1_048_576
+    uint256 public constant MAX_GAS_BUDGET = 2 ** 20; // 1_048_576
     /// @inheritdoc IOverload
-    uint256 public constant MAX_DELEGATIONS = 2 ** 8; // 256
+    uint256 public constant MAX_DELEGATIONS = 2 ** 12; // 4096
     /// @inheritdoc IOverload
-    uint256 public constant MAX_UNDELEGATIONS = 2 ** 8; // 256
+    uint256 public constant MAX_UNDELEGATIONS = 2 ** 12; // 4096
 
     /// @inheritdoc IOverload
     uint256 public constant MAX_DELAY = 604_800; // 7 days
@@ -52,6 +52,8 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IOverload
+    mapping(address consensus => uint256 gas) public budgets;
     /// @inheritdoc IOverload
     mapping(address consensus => uint256 delay) public delays;
     /// @inheritdoc IOverload
@@ -131,6 +133,18 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ADMIN                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IOverload
+    function setBudget(address consensus, uint256 gas) public lock returns (bool) {
+        require(msg.sender == consensus || isOperator[consensus][msg.sender], Unauthorized());
+        require(gas <= MAX_GAS_BUDGET, ValueExceedsMaxGasBudget());
+
+        budgets[consensus] = gas;
+
+        emit SetBudget(consensus, gas);
+
+        return true;
+    }
 
     /// @inheritdoc IOverload
     function setDelay(address consensus, uint256 delay) public lock returns (bool) {
@@ -219,7 +233,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(delegations[key.owner][key.token].length < MAX_DELEGATIONS, MaxDelegationsReached());
 
         // Before hook call
-        _beforeDelegateHook(key.consensus, GAS_BUDGET, key, position, amount, data, strict);
+        _beforeDelegateHook(key.consensus, _gasBudget(key.consensus), key, position, amount, data, strict);
 
         uint256 balance = balanceOf[key.owner][key.token.convertToId()] + bonded[key.owner][key.token];
 
@@ -248,7 +262,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
 
         // After hook call
-        _afterDelegateHook(key.consensus, GAS_BUDGET, key, position, amount, data, strict, delegation, index);
+        _afterDelegateHook(key.consensus, _gasBudget(key.consensus), key, position, amount, data, strict, delegation, index);
 
         emit Delegate(msg.sender, key, position, amount, data, strict, index);
 
@@ -274,12 +288,12 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         uint256 index = found.u256();
 
         // Before hook
-        _beforeRedelegateHook(from.consensus, GAS_BUDGET, from, to, position, data, strict);
+        _beforeRedelegateHook(from.consensus, _gasBudget(from.consensus), from, to, position, data, strict);
 
         delegations[from.owner][from.token][index].validator = to.validator;
 
         // After hook
-        _afterRedelegateHook(from.consensus, GAS_BUDGET, from, to, position, data, strict, index);
+        _afterRedelegateHook(from.consensus, _gasBudget(from.consensus), from, to, position, data, strict, index);
 
         emit Redelegate(msg.sender, from, to, position, data, strict, index);
 
@@ -312,7 +326,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(jailed[key.consensus][key.validator] <= block.timestamp, Jailed());
 
         // Non-strict hook call
-        _beforeUndelegatingHook(key.consensus, GAS_BUDGET, key, position, amount, data, strict, index);
+        _beforeUndelegatingHook(key.consensus, _gasBudget(key.consensus), key, position, amount, data, strict, index);
 
         // Update the delegation
         if (amount == delegation.amount) {
@@ -343,7 +357,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
 
         // Non-strict hook call
-        _afterUndelegatingHook(key.consensus, GAS_BUDGET, key, position, amount, data, strict, undelegationKey, insertIndex);
+        _afterUndelegatingHook(key.consensus, _gasBudget(key.consensus), key, position, amount, data, strict, undelegationKey, insertIndex);
 
         emit Undelegating(msg.sender, key, position, amount, data, strict, undelegationKey, insertIndex);
 
@@ -375,13 +389,13 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(index >= 0, Fatal());
 
         // Non-strict hook call
-        _beforeUndelegateHook(key.consensus, GAS_BUDGET, key, position, data, strict, index.u256());
+        _beforeUndelegateHook(key.consensus, _gasBudget(key.consensus), key, position, data, strict, index.u256());
 
         undelegations.remove(key, index.u256());
         _bondUpdate(key.owner, key.token);
 
         // Non-strict hook call
-        _afterUndelegateHook(key.consensus, GAS_BUDGET, key, position, data, strict);
+        _afterUndelegateHook(key.consensus, _gasBudget(key.consensus), key, position, data, strict);
 
         emit Undelegate(msg.sender, key, position, data, strict);
 
@@ -412,6 +426,14 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          INTERNAL                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _gasBudget(address consensus) internal view returns (uint256) {
+        if (budgets[consensus] == 0) {
+            return MAX_GAS_BUDGET;
+        } else {
+            return budgets[consensus];
+        }
+    }
 
     /// @dev Only increase the token bonding.
     function _bondTokens(address owner, address token, uint256 amount) internal {

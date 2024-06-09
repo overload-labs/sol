@@ -10,6 +10,10 @@ interface EOverload {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @notice Emitted when gas budget changes for a consensus contract.
+    /// @param consensus The consensus contract, also the caller.
+    /// @param gas The new gas budget.
+    event SetBudget(address indexed consensus, uint256 gas);
     /// @notice Emitted when undelegating delay changes for a consensus contract.
     /// @param consensus The consensus contract, also the caller.
     /// @param delay The new delay value, in seconds.
@@ -99,6 +103,8 @@ interface EOverload {
      * Specific errors
      */
 
+    /// @notice Thrown when the parameter exceeds the max allowed gas budget.
+    error ValueExceedsMaxGasBudget();
     /// @notice Thrown when the parameter exceeds the max allowed delay.
     error ValueExceedsMaxDelay();
     /// @notice Thrown when the parameter exceeds the max allowed cooldown.

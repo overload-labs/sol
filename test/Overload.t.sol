@@ -532,7 +532,7 @@ contract OverloadTest is EOverload, Test {
     function test_fail_delegate_maxDelegations() public {
         deposit(address(0xBEEF), 1000);
 
-        for (uint256 i = 1; i < 256 + 1; i++) {
+        for (uint256 i = 1; i < 4096 + 1; i++) {
             delegate(address(0xBEEF), address(uint160(i)), address(uint160(i)), 1, true);
         }
 
@@ -864,7 +864,7 @@ contract OverloadTest is EOverload, Test {
         deposit(address(0xBEEF), 1e18);
         delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 1e18, true);
 
-        for (uint256 i = 0; i < 256; i++) {
+        for (uint256 i = 0; i < 4096; i++) {
             undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 10, true);
         }
 

@@ -9,7 +9,7 @@ interface IOverload {
     /// @notice Returns the total gas budget that a hook call has.
     /// @dev A hook not consuming withing the budget can lead to unexpected behaviours on the consensus contracts. It's
     ///     important that the implemented hooks stay within good margin of the gas budget.
-    function GAS_BUDGET() external pure returns (uint256);
+    function MAX_GAS_BUDGET() external pure returns (uint256);
 
     /// @notice Returns the max delegations allowed per token.
     function MAX_DELEGATIONS() external pure returns (uint256);
@@ -30,6 +30,9 @@ interface IOverload {
 
     /// @notice Returns the max possible set jailtime for a (consensus, validator) pair.
     function MAX_JAILTIME() external pure returns (uint256);
+
+    /// @notice Returns the gas budgest for hooks calls for a consensus contract.
+    function budgets(address consensus) external view returns (uint256 gas);
 
     /// @notice Returns the `undelegating` delay in seconds, per consensus contract.
     function delays(address consensus) external view returns (uint256 delay);
@@ -89,6 +92,13 @@ interface IOverload {
     /// @notice Returns an undelegation using an undelegation key.
     /// @param key The key of the undelegation in the undelegations array.
     function getUndelegation(UndelegationKey memory key) external view returns (Undelegation memory undelegation);
+
+    /// @notice Sets the gas budget for a consensus contract.
+    /// @dev Can only be called by the consensus contract.
+    /// @param consensus The consensus contract.
+    /// @param gas The delay in seconds to set for the consensus contract.
+    /// @return Must return true.
+    function setBudget(address consensus, uint256 gas) external returns (bool);
 
     /// @notice Sets the `undelegating` delay for a consensus contract.
     /// @dev If delay is greater than zero, then a user will need to wait `delay` seconds before being able to call
