@@ -65,7 +65,7 @@ contract OverloadTest is EOverload, Test {
         });
 
         vm.prank(user);
-        overload.delegate(key, amount, "", strict);
+        overload.delegate(key, -1, amount, "", strict);
     }
 
     function delegate(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public {
@@ -77,7 +77,7 @@ contract OverloadTest is EOverload, Test {
         });
 
         vm.prank(user);
-        overload.delegate(key, amount, "", strict);
+        overload.delegate(key, -1, amount, "", strict);
     }
 
     function redelegate(address user, address consensus, address fromValidator, address toValidator) public returns (bool) {
@@ -95,7 +95,7 @@ contract OverloadTest is EOverload, Test {
         });
 
         vm.prank(user);
-        return overload.redelegate(fromKey, toKey, "", true);
+        return overload.redelegate(fromKey, toKey, -1, "", true);
     }
 
     function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
@@ -107,7 +107,7 @@ contract OverloadTest is EOverload, Test {
         });
 
         vm.prank(user);
-        return overload.undelegating(key, amount, "", strict);
+        return overload.undelegating(key, -1, amount, "", strict);
     }
 
     function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
@@ -119,7 +119,7 @@ contract OverloadTest is EOverload, Test {
         });
 
         vm.prank(user);
-        return overload.undelegating(key, amount, "", strict);
+        return overload.undelegating(key, -1, amount, "", strict);
     }
 
     function undelegate(address user, UndelegationKey memory ukey, int256 position, bytes memory data, bool strict) public {
@@ -330,8 +330,8 @@ contract OverloadTest is EOverload, Test {
 
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Delegate(key, 50, "", false, 0);
-        bool success = overload.delegate(key, 50, "", false);
+        emit Delegate(key, -1, 50, "", false, 0);
+        bool success = overload.delegate(key, -1, 50, "", false);
         assertEq(success, true);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
@@ -356,8 +356,8 @@ contract OverloadTest is EOverload, Test {
         // first 50
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Delegate(key, 50, "", false, 0);
-        assertTrue(overload.delegate(key, 50, "", false));
+        emit Delegate(key, -1, 50, "", false, 0);
+        assertTrue(overload.delegate(key, -1, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xFFFF));
@@ -368,8 +368,8 @@ contract OverloadTest is EOverload, Test {
         // second 50, total 100
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Delegate(key, 50, "", false, 0);
-        assertTrue(overload.delegate(key, 50, "", false));
+        emit Delegate(key, -1, 50, "", false, 0);
+        assertTrue(overload.delegate(key, -1, 50, "", false));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(0xCCCC));
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xFFFF));
@@ -444,7 +444,7 @@ contract OverloadTest is EOverload, Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xABCD));
-        overload.delegate(key, 100, "", true);
+        overload.delegate(key, -1, 100, "", true);
     }
 
     function test_delegate_operator() public {
@@ -462,7 +462,7 @@ contract OverloadTest is EOverload, Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xABCD));
-        overload.delegate(key, 100, "", true);
+        overload.delegate(key, -1, 100, "", true);
     }
 
     function test_delegate_withData() public {
@@ -476,8 +476,8 @@ contract OverloadTest is EOverload, Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectEmit(true, true, true, true);
-        emit Delegate(key, 100, abi.encodePacked(uint256(42)), true, 0);
-        overload.delegate(key, 100, abi.encodePacked(uint256(42)), true);
+        emit Delegate(key, -1, 100, abi.encodePacked(uint256(42)), true, 0);
+        overload.delegate(key, -1, 100, abi.encodePacked(uint256(42)), true);
     }
 
     // Should fail to delegate to two different validators for a single consensus address
@@ -526,7 +526,7 @@ contract OverloadTest is EOverload, Test {
         });
         vm.prank(address(0xABCD));
         vm.expectRevert(stdError.arithmeticError);
-        overload.delegate(key, 100, "", true);
+        overload.delegate(key, -1, 100, "", true);
     }
 
     function test_fail_delegate_maxDelegations() public {
@@ -591,10 +591,10 @@ contract OverloadTest is EOverload, Test {
 
         vm.prank(address(0xBEEF));
         vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
-        overload.redelegate(fromKey, toKey, "", true);
+        overload.redelegate(fromKey, toKey, -1, "", true);
         vm.prank(address(0xBEEF));
         vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xBEEF), address(0xABCD)));
-        overload.redelegate(fromKey, toKey, "", false);
+        overload.redelegate(fromKey, toKey, -1, "", false);
 
         // Case `token` mismatch
         fromKey.owner = address(0xBEEF);
@@ -608,10 +608,10 @@ contract OverloadTest is EOverload, Test {
 
         vm.prank(address(0xBEEF));
         vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(token), address(tokenA)));
-        overload.redelegate(fromKey, toKey, "", true);
+        overload.redelegate(fromKey, toKey, -1, "", true);
         vm.prank(address(0xBEEF));
         vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(token), address(tokenA)));
-        overload.redelegate(fromKey, toKey, "", false);
+        overload.redelegate(fromKey, toKey, -1, "", false);
 
         // Case `consensus` mismatch
         fromKey.owner = address(0xBEEF);
@@ -625,10 +625,10 @@ contract OverloadTest is EOverload, Test {
 
         vm.prank(address(0xBEEF));
         vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
-        overload.redelegate(fromKey, toKey, "", true);
+        overload.redelegate(fromKey, toKey, -1, "", true);
         vm.prank(address(0xBEEF));
         vm.expectRevert(abi.encodeWithSelector(EOverload.MismatchAddress.selector, address(0xCCCC), address(0xCCCA)));
-        overload.redelegate(fromKey, toKey, "", false);
+        overload.redelegate(fromKey, toKey, -1, "", false);
     }
 
     function test_fail_redelegate_delegationNotFound() public {
@@ -662,8 +662,8 @@ contract OverloadTest is EOverload, Test {
             amount: 0,
             maturity: 0
         });
-        emit Undelegating(key, 25, "", true, eukey, -1);
-        (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, 25, "", true));
+        emit Undelegating(key, -1, 25, "", true, eukey, -1);
+        (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, -1, 25, "", true));
         assertTrue(success);
         assertEq(ukey.owner, address(0));
         assertEq(ukey.token, address(0));
@@ -682,7 +682,7 @@ contract OverloadTest is EOverload, Test {
         assertEq(overload.bonded(address(0xBEEF), address(token)), 25);
 
         vm.prank(address(0xBEEF));
-        (success, ukey, ) = (overload.undelegating(key, 25, "", true));
+        (success, ukey, ) = (overload.undelegating(key, -1, 25, "", true));
 
         assertFalse(overload.delegated(address(0xBEEF), address(token), address(0xCCCC)));
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 0);
@@ -707,7 +707,7 @@ contract OverloadTest is EOverload, Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xBEEF));
-        (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, 25, "", true));
+        (bool success, UndelegationKey memory ukey, ) = (overload.undelegating(key, -1, 25, "", true));
         assertTrue(success);
         assertEq(ukey.owner, address(0xBEEF));
         assertEq(ukey.token, address(token));
@@ -797,7 +797,7 @@ contract OverloadTest is EOverload, Test {
         });
         vm.prank(address(0xBEEF));
         vm.expectRevert(EOverload.NotDelegated.selector);
-        overload.undelegating(key, 1, "", true);
+        overload.undelegating(key, -1, 1, "", true);
     }
 
     // Should fail when (owner, token, consensus) is correct, but the `validator`is not.
@@ -851,7 +851,7 @@ contract OverloadTest is EOverload, Test {
         });
         vm.prank(address(0xABCD));
         vm.expectRevert(EOverload.Unauthorized.selector);
-        overload.undelegating(key, 50, "", true);
+        overload.undelegating(key, -1, 50, "", true);
     }
 
     function test_fail_undelegating_zero() public {

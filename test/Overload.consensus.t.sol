@@ -97,7 +97,7 @@ contract OverloadConsensusTest is Test {
         });
 
         vm.prank(user);
-        overload.delegate(key, amount, "", strict);
+        overload.delegate(key, -1, amount, "", strict);
     }
 
     function delegate(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public {
@@ -109,7 +109,7 @@ contract OverloadConsensusTest is Test {
         });
 
         vm.prank(user);
-        overload.delegate(key, amount, "", strict);
+        overload.delegate(key, -1, amount, "", strict);
     }
 
     function redelegate(address user, address consensus, address fromValidator, address toValidator, bool strict) public returns (bool) {
@@ -127,7 +127,7 @@ contract OverloadConsensusTest is Test {
         });
 
         vm.prank(user);
-        return overload.redelegate(fromKey, toKey, "", strict);
+        return overload.redelegate(fromKey, toKey, -1, "", strict);
     }
 
     function undelegating(address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
@@ -139,7 +139,7 @@ contract OverloadConsensusTest is Test {
         });
 
         vm.prank(user);
-        return overload.undelegating(key, amount, "", strict);
+        return overload.undelegating(key, -1, amount, "", strict);
     }
 
     function undelegating(ERC20Mock token_, address user, address consensus, address validator, uint256 amount, bool strict) public returns (bool success, UndelegationKey memory, int256) {
@@ -151,7 +151,7 @@ contract OverloadConsensusTest is Test {
         });
 
         vm.prank(user);
-        return overload.undelegating(key, amount, "", strict);
+        return overload.undelegating(key, -1, amount, "", strict);
     }
 
     function undelegate(address user, UndelegationKey memory ukey, int256 position, bytes memory data, bool strict) public {
@@ -210,15 +210,15 @@ contract OverloadConsensusTest is Test {
 
         // Delegate
         vm.prank(address(0xBEEF));
-        overload.delegate(key, 100, hex"42", true);
+        overload.delegate(key, -1, 100, hex"42", true);
 
         // Redelegate
         vm.prank(address(0xBEEF));
-        overload.redelegate(key, toKey, hex"42", true);
+        overload.redelegate(key, toKey, -1, hex"42", true);
 
         // Undelegating
         vm.prank(address(0xBEEF));
-        (, UndelegationKey memory ukey, ) = overload.undelegating(toKey, 100, hex"42", true);
+        (, UndelegationKey memory ukey, ) = overload.undelegating(toKey, -1, 100, hex"42", true);
         assertEq(overload.balanceOf(address(0xBEEF), address(token).convertToId()), 0);
         assertEq(overload.bonded(address(0xBEEF), address(token)), 100);
 
@@ -247,12 +247,12 @@ contract OverloadConsensusTest is Test {
         // Strict true reverts
         vm.prank(address(0xBEEF));
         vm.expectRevert();
-        overload.delegate(key, 50, "", true);
+        overload.delegate(key, -1, 50, "", true);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 0);
 
         // Strict false passes
         vm.prank(address(0xBEEF));
-        overload.delegate(key, 50, "", false);
+        overload.delegate(key, -1, 50, "", false);
         assertEq(overload.getDelegationsLength(address(0xBEEF), address(token)), 1);
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).consensus, address(consensusRevert));
         assertEq(overload.getDelegation(address(0xBEEF), address(token), 0).validator, address(0xFFFF));
@@ -287,11 +287,11 @@ contract OverloadConsensusTest is Test {
         // Should revert
         vm.prank(address(0xBEEF));
         vm.expectRevert();
-        overload.undelegating(key, 25, "", true);
+        overload.undelegating(key, -1, 25, "", true);
 
         // hould not revert
         vm.prank(address(0xBEEF));
-        overload.undelegating(key, 25, "", false);
+        overload.undelegating(key, -1, 25, "", false);
     }
 
     function test_fail_undelegate_consensusRevert() public {
@@ -404,8 +404,8 @@ contract OverloadConsensusTest is Test {
             validator: address(0xFFFF)
         });
         vm.prank(address(0xBEEF));
-        vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 1048509));
-        overload.delegate{gas: 2 ** 20 + 29000}(key, 100, "", false);
+        vm.expectRevert(abi.encodeWithSelector(FunctionCallLib.InsufficientGas.selector, 1048480));
+        overload.delegate{gas: 2 ** 20 + 29550}(key, -1, 100, "", false);
 
         // // Should not revert
         // vm.prank(address(0xBEEF));
@@ -430,19 +430,19 @@ contract OverloadConsensusTest is Test {
         uint256 gasLeft = gasleft();
         vm.prank(address(0xBEEF));
         vm.expectRevert(FunctionCallLib.FailedCall.selector);
-        overload.delegate(key, 100, abi.encodePacked(uint256(49)), true);
+        overload.delegate(key, -1, 100, abi.encodePacked(uint256(49)), true);
         console2.log(gasLeft - gasleft());
 
         // Does not revert
         gasLeft = gasleft();
         vm.prank(address(0xBEEF));
-        overload.delegate(key, 50, abi.encodePacked(uint256(48)), true);
+        overload.delegate(key, -1, 50, abi.encodePacked(uint256(48)), true);
         console2.log(gasLeft - gasleft());
 
         // Does not revert, because strict is false
         gasLeft = gasleft();
         vm.prank(address(0xBEEF));
-        overload.delegate(key, 50, abi.encodePacked(uint256(100)), false);
+        overload.delegate(key, -1, 50, abi.encodePacked(uint256(100)), false);
         console2.log(gasLeft - gasleft());
 
         assertEq(consensusGasEater.slots(47), 47);

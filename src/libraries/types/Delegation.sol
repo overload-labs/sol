@@ -27,6 +27,9 @@ library DelegationLib {
 
     /// @notice Thrown when a delegation is not found using the `get` function.
     error DelegationNotFound();
+    /// @notice Thrown when a delegation fetched mismatch with key parameter.
+    error MismatchConsensus(address a, address b);
+    error MismatchValidator(address a, address b);
 
     /*//////////////////////////////////////////////////////////////
                                  VIEWS
@@ -41,13 +44,22 @@ library DelegationLib {
     function get(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         DelegationKey memory key,
+        int256 position,
         bool strict
     ) internal view returns (Delegation memory delegation, int256 index) {
-        int256 position_ = position(map, key);
+        int256 found;
 
-        if (position_ >= 0) {
-            index = position_;
+        if (position == -1) {
+            found = find(map, key);
+        } else {
+            found = position;
+        }
+
+        if (found >= 0) {
+            index = found;
             delegation = map[key.owner][key.token][CastLib.u256(index)];
+            require(key.consensus == delegation.consensus, MismatchConsensus(key.consensus, delegation.consensus));
+            require(key.validator == delegation.validator, MismatchValidator(key.validator, delegation.validator));
         } else {
             if (strict) {
                 revert DelegationNotFound();
@@ -61,7 +73,7 @@ library DelegationLib {
     /// @notice Returns the index of a delegation object if found.
     /// @param map The delegation array map.
     /// @param key The key of the delegation.
-    function position(
+    function find(
         mapping(address owner => mapping(address token => Delegation[])) storage map,
         DelegationKey memory key
     ) internal view returns (int256) {

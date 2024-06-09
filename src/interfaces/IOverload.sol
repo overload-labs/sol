@@ -129,31 +129,34 @@ interface IOverload {
     /// @dev Depending on current delegated tokens, it might or might not increase the `bonded` tokens.
     ///     The bonded amount is set to the max delegated amount.
     /// @param key The delegation key.
+    /// @param position The index of the delegation object, or `-1` to find the delegation at runtime.
     /// @param amount The amount of tokens to delegate.
     /// @param data The data to send to the before and after hooks.
     /// @param strict If true, then hook reverts are bubbled up, otherwise they are ignored.
     /// @return Must return true.
-    function delegate(DelegationKey memory key, uint256 amount, bytes calldata data, bool strict) external returns (bool);
+    function delegate(DelegationKey memory key, int256 position, uint256 amount, bytes calldata data, bool strict) external returns (bool);
 
     /// @notice Changes the validator from `from.validator` to `to.validator` for a consensus contract.
     /// @param from The initial delegation key.
     /// @param to The delegation key with a changed validator value.
+    /// @param position The index of the delegation object, or `-1` to find the delegation at runtime.
     /// @param data The data to send to the before and after hooks.
     /// @param strict If true, then hook reverts are bubbled up, otherwise they are ignored.
     /// @return Must return true.
-    function redelegate(DelegationKey memory from, DelegationKey memory to, bytes calldata data, bool strict) external returns (bool);
+    function redelegate(DelegationKey memory from, DelegationKey memory to, int256 position, bytes calldata data, bool strict) external returns (bool);
 
     /// @notice Removes a delegation object and creates an undelegation object if delay for the consensus contract is
     ///     greater than zero.
     /// @dev If the delay for the consensus contract is zero, then an undelegation object will not be created.
     /// @param key The delegation key
+    /// @param position The index of the delegation object, or `-1` to find the delegation at runtime.
     /// @param amount The amount of tokens to reduce from the delegation, and amount of tokens to add to a new undelegation.
     /// @param data The data to send to the before and after hooks.
     /// @param strict If true, then hook reverts are bubbled up, otherwise they are ignored.
     /// @return success Must return true.
     /// @return ukey The undelegation key.
     /// @return index The index of the created undelegation object. `-1` if no undelegation was added.
-    function undelegating(DelegationKey memory key, uint256 amount, bytes calldata data, bool strict) external returns (bool success, UndelegationKey memory ukey, int256 index);
+    function undelegating(DelegationKey memory key, int256 position, uint256 amount, bytes calldata data, bool strict) external returns (bool success, UndelegationKey memory ukey, int256 index);
 
     /// @notice Remove a matured undelegation object.
     /// @dev Removing an undelegation object could lead to reduction of bonded tokens and an increase of `balanceOf`

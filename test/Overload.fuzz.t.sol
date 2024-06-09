@@ -115,7 +115,7 @@ contract OverloadFuzzTest is EOverload, Test {
         if (amount == 0) {
             vm.prank(owner);
             vm.expectRevert(EOverload.Zero.selector);
-            overload.delegate(key, amount, data, strict);
+            overload.delegate(key, -1, amount, data, strict);
         } else {
             // Deposit
             vm.prank(owner);
@@ -126,8 +126,8 @@ contract OverloadFuzzTest is EOverload, Test {
             // Delegate
             vm.prank(owner);
             vm.expectEmit(true, true, true, true);
-            emit Delegate(key, amount, data, strict, 0);
-            assertTrue(overload.delegate(key, amount, data, strict));
+            emit Delegate(key, -1, amount, data, strict, 0);
+            assertTrue(overload.delegate(key, -1, amount, data, strict));
 
             assertEq(overload.getDelegationsLength(owner, address(token)), 1);
             assertEq(overload.getDelegation(owner, address(token), 0).consensus, consensus);

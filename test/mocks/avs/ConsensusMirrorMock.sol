@@ -66,7 +66,7 @@ contract ConsensusMirror {
                                  HOOKS
     //////////////////////////////////////////////////////////////*/
 
-    function beforeDelegate(address, DelegationKey memory key, uint256 delta, bytes calldata, bool strict) external returns (bytes4) {
+    function beforeDelegate(address, DelegationKey memory key, int256, uint256 delta, bytes calldata, bool strict) external returns (bytes4) {
         require(msg.sender == overload);
         require(strict == true);
 
@@ -77,7 +77,7 @@ contract ConsensusMirror {
         return HOverload.beforeDelegate.selector;
     }
 
-    function beforeUndelegating(address, DelegationKey memory key, uint256 delta, bytes calldata, bool, uint256) external returns (bytes4) {
+    function beforeUndelegating(address, DelegationKey memory key, int256, uint256 delta, bytes calldata, bool, uint256) external returns (bytes4) {
         require(msg.sender == overload);
 
         balances[key.owner][key.token].decrease(delta);

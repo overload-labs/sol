@@ -20,6 +20,7 @@ abstract contract COverload {
         address target,
         uint256 gas,
         DelegationKey memory key,
+        int256 position,
         uint256 delta,
         bytes calldata data,
         bool strict
@@ -28,7 +29,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(HOverload.beforeDelegate, (msg.sender, key, delta, data, strict)),
+                abi.encodeCall(HOverload.beforeDelegate, (msg.sender, key, position, delta, data, strict)),
                 strict
             );
         }
@@ -38,6 +39,7 @@ abstract contract COverload {
         address target,
         uint256 gas,
         DelegationKey memory key,
+        int256 position,
         uint256 delta,
         bytes calldata data,
         bool strict,
@@ -48,7 +50,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(HOverload.afterDelegate, (msg.sender, key, delta, data, strict, delegation, index)),
+                abi.encodeCall(HOverload.afterDelegate, (msg.sender, key, position, delta, data, strict, delegation, index)),
                 strict
             );
         }
@@ -63,6 +65,7 @@ abstract contract COverload {
         uint256 gas,
         DelegationKey memory from,
         DelegationKey memory to,
+        int256 position,
         bytes calldata data,
         bool strict
     ) internal {
@@ -70,7 +73,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(HOverload.beforeRedelegate, (msg.sender, from, to, data, strict)),
+                abi.encodeCall(HOverload.beforeRedelegate, (msg.sender, from, to, position, data, strict)),
                 strict
             );
         }
@@ -81,14 +84,16 @@ abstract contract COverload {
         uint256 gas,
         DelegationKey memory from,
         DelegationKey memory to,
+        int256 position,
         bytes calldata data,
-        bool strict
+        bool strict,
+        uint256 index
     ) internal {
         if (ERC165Checker.supportsInterface(target, HOverload.afterRedelegate.selector)) {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(HOverload.afterRedelegate, (msg.sender, from, to, data, strict)),
+                abi.encodeCall(HOverload.afterRedelegate, (msg.sender, from, to, position, data, strict, index)),
                 strict
             );
         }
@@ -102,6 +107,7 @@ abstract contract COverload {
         address target,
         uint256 gas,
         DelegationKey memory key,
+        int256 position,
         uint256 delta,
         bytes calldata data,
         bool strict,
@@ -111,7 +117,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(HOverload.beforeUndelegating, (msg.sender, key, delta, data, strict, index)),
+                abi.encodeCall(HOverload.beforeUndelegating, (msg.sender, key, position, delta, data, strict, index)),
                 strict
             );
         }
@@ -121,6 +127,7 @@ abstract contract COverload {
         address target,
         uint256 gas,
         DelegationKey memory key,
+        int256 position,
         uint256 delta,
         bytes calldata data,
         bool strict,
@@ -131,7 +138,7 @@ abstract contract COverload {
             HookCallLib.functionCallHook(
                 target,
                 gas,
-                abi.encodeCall(HOverload.afterUndelegating, (msg.sender, key, delta, data, strict, ukey, index)),
+                abi.encodeCall(HOverload.afterUndelegating, (msg.sender, key, position, delta, data, strict, ukey, index)),
                 strict
             );
         }
