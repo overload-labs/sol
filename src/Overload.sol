@@ -199,21 +199,21 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IOverload
-    function delegate(DelegationKey memory key, uint256 delta, bytes calldata data, bool strict) public lock returns (bool) {
+    function delegate(DelegationKey memory key, uint256 amount, bytes calldata data, bool strict) public lock returns (bool) {
         // Check for owner or approval
         if (msg.sender != key.owner && !isOperator[key.owner][msg.sender]) {
             uint256 allowed = allowance[key.owner][msg.sender][key.token.convertToId()];
 
             if (allowed != type(uint256).max) {
-                allowance[key.owner][msg.sender][key.token.convertToId()] = allowed - delta;
+                allowance[key.owner][msg.sender][key.token.convertToId()] = allowed - amount;
             }
         }
-        require(delta > 0, Zero());
+        require(amount > 0, Zero());
         // Check below max delegations amount
         require(delegations[key.owner][key.token].length < MAX_DELEGATIONS, MaxDelegationsReached());
 
         // Before hook call
-        _beforeDelegateHook(key.consensus, GAS_BUDGET, key, delta, data, strict);
+        _beforeDelegateHook(key.consensus, GAS_BUDGET, key, amount, data, strict);
 
         uint256 balance = balanceOf[key.owner][key.token.convertToId()] + bonded[key.owner][key.token];
 
@@ -224,27 +224,27 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
 
             // Strictly get delegation
             (delegation, position) = delegations.get(key, true);
-            require((delegation.amount + delta) <= balance, Overflow());
+            require((delegation.amount + amount) <= balance, Overflow());
 
             // Increase delegation amount
-            _bondTokens(key.owner, key.token, delegation.amount + delta);
+            _bondTokens(key.owner, key.token, delegation.amount + amount);
             index = position.u256();
-            delegation = delegations.increase(key.owner, key.token, index, delta);
+            delegation = delegations.increase(key.owner, key.token, index, amount);
         } else {
-            require(delta <= balance, Overflow());
+            require(amount <= balance, Overflow());
 
             // Create delegation
-            _bondTokens(key.owner, key.token, delta);
-            (delegation, index) = delegations.add(key, delta);
+            _bondTokens(key.owner, key.token, amount);
+            (delegation, index) = delegations.add(key, amount);
 
             // Mark that delegation exists
             delegated[key.owner][key.token][key.consensus] = true;
         }
 
         // After hook call
-        _afterDelegateHook(key.consensus, GAS_BUDGET, key, delta, data, strict, delegation, index);
+        _afterDelegateHook(key.consensus, GAS_BUDGET, key, amount, data, strict, delegation, index);
 
-        emit Delegate(key, delta, data, strict, index);
+        emit Delegate(key, amount, data, strict, index);
 
         return true;
     }
@@ -281,13 +281,13 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
     /// @inheritdoc IOverload
     function undelegating(
         DelegationKey memory key,
-        uint256 delta,
+        uint256 amount,
         bytes calldata data,
         bool strict
     ) public lock returns (bool, UndelegationKey memory undelegationKey, int256 insertIndex) {
         // Check parameters
         require(msg.sender == key.owner || isOperator[key.owner][msg.sender], Unauthorized());
-        require(delta > 0, Zero());
+        require(amount > 0, Zero());
         require(delegated[key.owner][key.token][key.consensus], NotDelegated());
         require(undelegations[key.owner][key.token].length < MAX_UNDELEGATIONS, MaxUndelegationsReached());
 
@@ -295,21 +295,21 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         (Delegation memory delegation, int256 index) = delegations.get(key, true);
         require(key.consensus == delegation.consensus, MismatchAddress(key.consensus, delegation.consensus));
         require(key.validator == delegation.validator, MismatchAddress(key.validator, delegation.validator));
-        require(delta <= delegation.amount, Overflow());
+        require(amount <= delegation.amount, Overflow());
         require(index >= 0, Fatal());
 
         // Check validator is not jailed
         require(jailed[key.consensus][key.validator] <= block.timestamp, Jailed());
 
         // Non-strict hook call
-        _beforeUndelegatingHook(key.consensus, GAS_BUDGET, key, delta, data, strict, index.u256());
+        _beforeUndelegatingHook(key.consensus, GAS_BUDGET, key, amount, data, strict, index.u256());
 
         // Update the delegation
-        if (delta == delegation.amount) {
+        if (amount == delegation.amount) {
             delegation = delegations.remove(key.owner, key.token, index.u256());
             delegated[key.owner][key.token][key.consensus] = false;
         } else {
-            delegation = delegations.decrease(key.owner, key.token, index.u256(), delta);
+            delegation = delegations.decrease(key.owner, key.token, index.u256(), amount);
         }
 
         // Push new undelegation
@@ -320,7 +320,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
                 token: key.token,
                 consensus: key.consensus,
                 validator: key.validator,
-                amount: delta,
+                amount: amount,
                 maturity: block.timestamp + delays[key.consensus]
             });
             insertIndex = undelegations.add(undelegationKey).i256();
@@ -333,9 +333,9 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         }
 
         // Non-strict hook call
-        _afterUndelegatingHook(key.consensus, GAS_BUDGET, key, delta, data, strict, undelegationKey, insertIndex);
+        _afterUndelegatingHook(key.consensus, GAS_BUDGET, key, amount, data, strict, undelegationKey, insertIndex);
 
-        emit Undelegating(key, delta, data, strict, undelegationKey, insertIndex);
+        emit Undelegating(key, amount, data, strict, undelegationKey, insertIndex);
 
         return (true, undelegationKey, insertIndex);
     }

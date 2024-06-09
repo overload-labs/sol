@@ -32,10 +32,10 @@ interface EOverload {
     event Withdraw(address indexed caller, address owner, address indexed token, uint256 amount, address recipient);
     /// @notice Emitted when a delegation object is created.
     /// @param key The delegation key.
-    /// @param delta The amount of tokens to delegate.
+    /// @param amount The amount of tokens to delegate.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Delegate(DelegationKey indexed key, uint256 delta, bytes data, bool strict, uint256 index);
+    event Delegate(DelegationKey indexed key, uint256 amount, bytes data, bool strict, uint256 index);
     /// @notice Emitted when a delegation has its validator value changed.
     /// @param from The delegation key before the change.
     /// @param to The delegation key after the change.
@@ -44,11 +44,11 @@ interface EOverload {
     event Redelegate(DelegationKey indexed from, DelegationKey indexed to, bytes data, bool strict);
     /// @notice Emitted when `undelegating` is called. An undelgation object can be created depending on if delay exists.
     /// @param key The delegation key for the delegation object to transition into an undelegation.
-    /// @param delta The amount of tokens to reduce from the delegation. If full amount is entered, the delegation
+    /// @param amount The amount of tokens to reduce from the delegation. If full amount is entered, the delegation
     ///     object is removed.
     /// @param data The data that is sent to before and after hooks.
     /// @param strict If true, hook reverts are bubbled up, otherwise they ignored.
-    event Undelegating(DelegationKey indexed key, uint256 delta, bytes data, bool strict, UndelegationKey ukey,  int256 index);
+    event Undelegating(DelegationKey indexed key, uint256 amount, bytes data, bool strict, UndelegationKey ukey,  int256 index);
     /// @notice Emitted when `undelegate` is called and an undelegatino is removed.
     /// @param key The undelegation key that can be used to find a generic undelegation object.
     /// @param position The assumed position of the undelegation object. Enter `-1` to loop through `undelegations`.
