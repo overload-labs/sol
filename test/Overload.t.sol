@@ -1134,4 +1134,32 @@ contract OverloadTest is EOverload, Test {
         vm.warp(block.timestamp + 23 hours);
         overload.jail(address(0xFFFF), 1 hours);
     }
+
+    function test_jail_preventDelegateAndRedelegate() public {
+        // Need to increase this as contract does not take low default `block.timestamp` into account
+        vm.warp(1_000_000);
+
+        deposit(address(0xBEEF), 1000);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        vm.prank(address(0xCCCC));
+        overload.jail(address(0xFFFF), 1 hours);
+        vm.expectRevert(EOverload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        vm.expectRevert(EOverload.Jailed.selector);
+        redelegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), address(0xEEEE));
+        vm.expectRevert(EOverload.Jailed.selector);
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+
+        // After jailtime passed
+        vm.warp(1_000_000 + 1 hours - 1);
+        vm.expectRevert(EOverload.Jailed.selector);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        vm.warp(1_000_000 + 1 hours);
+
+        // Everything should work now
+        delegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        undelegating(address(0xBEEF), address(0xCCCC), address(0xFFFF), 100, true);
+        redelegate(address(0xBEEF), address(0xCCCC), address(0xFFFF), address(0xEEEE));
+    }
 }

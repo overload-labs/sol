@@ -231,6 +231,7 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(amount > 0, Zero());
         // Check below max delegations amount
         require(delegations[key.owner][key.token].length < MAX_DELEGATIONS, MaxDelegationsReached());
+        require(jailed[key.consensus][key.validator] <= block.timestamp, Jailed());
 
         // Before hook call
         _beforeDelegateHook(key.consensus, _gasBudget(key.consensus), key, position, amount, data, strict);
@@ -281,6 +282,8 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         require(from.token == to.token, MismatchAddress(from.token, to.token));
         require(from.consensus == to.consensus, MismatchAddress(from.consensus, to.consensus));
         require(from.validator != to.validator, Zero());
+        require(jailed[from.consensus][from.validator] <= block.timestamp, Jailed());
+        require(jailed[to.consensus][to.validator] <= block.timestamp, Jailed());
         require(msg.sender == to.owner || !isOperator[to.owner][msg.sender], Unauthorized());
     
         (, int256 found) = delegations.get(from, position, true);
