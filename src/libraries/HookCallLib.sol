@@ -15,7 +15,7 @@ library HookCallLib {
     /// @param gas The gas to pass to the call.
     /// @param data The data to pass to the call
     /// @param strict Whether to bubble up the revert or not from the call.
-    function functionCallHook(address target, uint256 gas, bytes memory data, bool strict) internal returns (bool success) {
+    function functionCallHook(address target, uint256 gas, bytes memory data, bool strict) internal {
         bytes4 expectedSelector;
         assembly { expectedSelector := mload(add(data, 0x20)) }
 
@@ -28,7 +28,5 @@ library HookCallLib {
                 revert InvalidHookResponse();
             }
         }
-
-        return success_;
     }
 }
