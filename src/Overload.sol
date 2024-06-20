@@ -385,9 +385,6 @@ contract Overload is IOverload, EOverload, COverload, ERC6909, Lock {
         } else {
             (undelegation, index) = undelegations.get(key, true);
         }
-        require(key.consensus == undelegation.consensus, MismatchAddress(key.consensus, undelegation.consensus));
-        require(key.validator == undelegation.validator, MismatchAddress(key.validator, undelegation.validator));
-        require(key.amount == undelegation.amount, MismatchUint256(key.amount, undelegation.amount));
         require(undelegation.maturity <= block.timestamp, NonMatureUndelegation());
         require(index >= 0, Fatal());
 

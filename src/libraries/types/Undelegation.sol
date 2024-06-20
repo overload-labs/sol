@@ -31,6 +31,11 @@ library UndelegationLib {
 
     /// @notice Thrown when an undelegation is not found using the `get` function.
     error UndelegationNotFound();
+    /// @notice Thrown when object is mismatched with key parameter.
+    error MismatchConsensus(address a, address b);
+    error MismatchValidator(address a, address b);
+    error MismatchAmount(uint256 a, uint256 b);
+    error MismatchMaturity(uint256 a, uint256 b);
 
     /*//////////////////////////////////////////////////////////////
                                  VIEWS
@@ -142,10 +147,10 @@ library UndelegationLib {
         Undelegation[] storage undelegations = map[key.owner][key.token];
 
         removed = undelegations[index];
-        require(removed.consensus == removed.consensus);
-        require(removed.validator == removed.validator);
-        require(removed.amount == removed.amount);
-        require(removed.maturity == removed.maturity);
+        require(key.consensus == removed.consensus, MismatchConsensus(key.consensus, removed.consensus));
+        require(key.validator == removed.validator, MismatchValidator(key.validator, removed.validator));
+        require(key.amount == removed.amount, MismatchAmount(key.amount, removed.amount));
+        require(key.maturity == removed.maturity, MismatchMaturity(key.maturity, removed.maturity));
 
         undelegations[index] = undelegations[undelegations.length - 1];
         undelegations.pop();
